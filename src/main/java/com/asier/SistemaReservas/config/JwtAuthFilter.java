@@ -1,0 +1,82 @@
+package com.asier.SistemaReservas.config;
+
+import com.asier.SistemaReservas.domain.entities.Token;
+import com.asier.SistemaReservas.domain.entities.UserEntity;
+import com.asier.SistemaReservas.repositories.TokenRepository;
+import com.asier.SistemaReservas.servicies.JwtService;
+import com.asier.SistemaReservas.servicies.UserService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.http.HttpHeaders;
+
+import java.io.IOException;
+import java.util.Optional;
+
+
+@Component
+@RequiredArgsConstructor
+public class JwtAuthFilter extends OncePerRequestFilter {
+    private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
+    private final TokenRepository tokenRepository;
+    private final UserService userService;
+
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    )throws ServletException, IOException {
+        if(request.getServletPath().contains("/auth")){
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if(authHeader == null || !authHeader.startsWith("Bearer ")){
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token no proporcionado");
+            return;
+        }
+
+        final String jwtToken = authHeader.substring(7);
+        final String mail = jwtService.extractUser(jwtToken);
+        if(mail == null){
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
+            return;
+        }
+
+        final Token token = tokenRepository.findByToken(jwtToken);
+        if(token == null || token.isExpired() || token.isRevoked()){
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token revocado o expirado");
+            return;
+        }
+
+        final UserDetails userDetails = this.userDetailsService.loadUserByUsername(mail);
+        final Optional<UserEntity> user = userService.getUserByMail(userDetails.getUsername());
+        if(user.isEmpty()){
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuario no encontrado");
+            return;
+        }
+        final boolean isTokenValid = jwtService.isTokenValid(jwtToken, user.get());
+        if(!isTokenValid){
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token no válido");
+            return;
+        }
+
+        final var authToken = new UsernamePasswordAuthenticationToken(userDetails,null, userDetails.getAuthorities());
+        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authToken);
+        filterChain.doFilter(request, response);
+    }
+}
