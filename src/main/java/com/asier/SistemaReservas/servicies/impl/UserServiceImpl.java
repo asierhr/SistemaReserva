@@ -1,6 +1,8 @@
 package com.asier.SistemaReservas.servicies.impl;
 
+import com.asier.SistemaReservas.domain.dto.UserDTO;
 import com.asier.SistemaReservas.domain.entities.UserEntity;
+import com.asier.SistemaReservas.mapper.UserMapper;
 import com.asier.SistemaReservas.repositories.UserRepository;
 import com.asier.SistemaReservas.servicies.UserService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Override
     public UserEntity createUser(UserEntity user) {
@@ -27,7 +30,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserEntity getUser() {
+    public UserDTO getUser() {
+        UserEntity user = getUserEntity();
+        return userMapper.toDTO(user);
+    }
+
+    @Override
+    public UserEntity getUserEntity() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if(authentication == null){
             System.out.println("authentication null");

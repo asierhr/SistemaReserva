@@ -1,5 +1,6 @@
 package com.asier.SistemaReservas.controller;
 
+import com.asier.SistemaReservas.domain.dto.UserDTO;
 import com.asier.SistemaReservas.domain.entities.UserEntity;
 import com.asier.SistemaReservas.servicies.UserService;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ public class UserController {
 
     @GetMapping("/profile")
     public ResponseEntity<?> profile() {
-        UserEntity user = userService.getUser();
+        UserDTO user = userService.getUser();
         return ResponseEntity.ok(user);
     }
 }

@@ -51,26 +51,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         final String jwtToken = authHeader.substring(7);
         final String mail = jwtService.extractUser(jwtToken);
-        if(mail == null){
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
+        if(mail == null || SecurityContextHolder.getContext().getAuthentication() != null){
+            filterChain.doFilter(request, response);
             return;
         }
 
         final Token token = tokenRepository.findByToken(jwtToken);
         if(token == null || token.isExpired() || token.isRevoked()){
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token revocado o expirado");
+            filterChain.doFilter(request, response);
             return;
         }
 
         final UserDetails userDetails = this.userDetailsService.loadUserByUsername(mail);
         final Optional<UserEntity> user = userService.getUserByMail(userDetails.getUsername());
         if(user.isEmpty()){
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuario no encontrado");
+            filterChain.doFilter(request, response);
             return;
         }
         final boolean isTokenValid = jwtService.isTokenValid(jwtToken, user.get());
         if(!isTokenValid){
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token no válido");
+            filterChain.doFilter(request, response);
             return;
         }
 
