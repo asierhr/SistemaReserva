@@ -30,7 +30,7 @@ public class HotelEntity {
     @Column(nullable = false)
     private String stars;
 
-    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RoomEntity> rooms = new ArrayList<>();
 }
 

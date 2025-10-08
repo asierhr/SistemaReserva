@@ -46,7 +46,6 @@ public class FlightReservationServiceImpl implements FlightReservationService {
                         "Seat " + seat.getId() + " is already reserved");
             }
             totalPrice = totalPrice.add(seat.getCostPerSeat());
-            System.out.println(totalPrice);
         }
         return totalPrice;
     }

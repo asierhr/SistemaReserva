@@ -1,9 +1,7 @@
 package com.asier.SistemaReservas.domain.entities;
 
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.List;
@@ -12,6 +10,8 @@ import java.util.List;
 @Setter
 @Entity
 @SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "flightReservations")
 public class FlightReservationEntity extends ReservationEntity{
     @ManyToOne

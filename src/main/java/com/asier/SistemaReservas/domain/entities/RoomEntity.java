@@ -24,6 +24,10 @@ public class RoomEntity {
     @JoinColumn(name = "hotel_id")
     private HotelEntity hotel;
 
+    @ManyToOne
+    @JoinColumn(name = "reservation_id")
+    private HotelReservationEntity reservation;
+
     @Column(nullable = false)
     private String numRoom;
 

@@ -1,6 +1,7 @@
 package com.asier.SistemaReservas.controller;
 
 import com.asier.SistemaReservas.domain.dto.FlightDTO;
+import com.asier.SistemaReservas.domain.dto.FlightSummaryDTO;
 import com.asier.SistemaReservas.servicies.FlightService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +18,8 @@ public class FlightController {
     }
 
     @GetMapping(path = "/flights/{id}")
-    public ResponseEntity<FlightDTO> getFlight(@PathVariable Long id){
-        FlightDTO flight = flightService.getFlight(id);
+    public ResponseEntity<FlightSummaryDTO> getFlight(@PathVariable Long id){
+        FlightSummaryDTO flight = flightService.getSummaryFlight(id);
         return ResponseEntity.ok(flight);
     }
 }
