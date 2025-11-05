@@ -30,7 +30,7 @@ public class HotelFavouriteServiceImpl implements HotelFavouriteService {
         hotelFavourite.setUser(user);
         return hotelFavouriteRepository.save(hotelFavourite);
     }
-
+//
     @Override
     public HotelFavouriteDTO updateFavourites(Long hotelId) {
         if(!hotelService.existsHotel(hotelId)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hotel not found");
