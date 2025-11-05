@@ -6,7 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +32,13 @@ public class FlightEntity {
     private String airline;
 
     @Column(nullable = false)
-    private LocalDateTime flightDay;
+    private LocalDate flightDay;
+
+    @Column(nullable = false)
+    private LocalTime departureTime;
+
+    @Column(nullable = false)
+    private LocalTime arrivalTime;
 
     @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<SeatEntity> seats = new ArrayList<>();

@@ -3,14 +3,16 @@ package com.asier.SistemaReservas.servicies.impl;
 import com.asier.SistemaReservas.domain.dto.FlightDTO;
 import com.asier.SistemaReservas.domain.dto.FlightSummaryDTO;
 import com.asier.SistemaReservas.domain.entities.FlightEntity;
+import com.asier.SistemaReservas.domain.records.FlightSearch;
 import com.asier.SistemaReservas.mapper.FlightMapper;
 import com.asier.SistemaReservas.repositories.FlightRepository;
 import com.asier.SistemaReservas.servicies.FlightService;
-import com.asier.SistemaReservas.servicies.SeatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 
 @Service
@@ -51,5 +53,21 @@ public class FlightServiceImpl implements FlightService {
         return flightRepository.findById(id)
                 .orElseThrow(() ->
                         new ResponseStatusException(HttpStatus.NOT_FOUND, "Flight not found"));
+    }
+
+    @Override
+    public List<FlightSummaryDTO> getFlightsBySearch(FlightSearch flightSearch) {
+        List<FlightEntity> flights = flightRepository.getFlightsByFlightSearch(flightSearch.origin(), flightSearch.destination(), flightSearch.flightDay());
+        return flightMapper.toSummaryDTOList(flights);
+    }
+
+    @Override
+    public List<String> getAllOrigins() {
+        return flightRepository.findAllOrigins();
+    }
+
+    @Override
+    public List<String> getAllDestinations() {
+        return flightRepository.findAllDestinations();
     }
 }

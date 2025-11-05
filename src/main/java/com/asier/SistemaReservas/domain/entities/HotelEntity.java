@@ -27,10 +27,15 @@ public class HotelEntity {
     @Column(nullable = false)
     private Location location;
 
+    private Double rating;
+
     @Column(nullable = false)
     private String stars;
 
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RoomEntity> rooms = new ArrayList<>();
+
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CommentEntity> comments = new ArrayList<>();
 }
 

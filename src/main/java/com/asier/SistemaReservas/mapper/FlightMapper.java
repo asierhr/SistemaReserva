@@ -17,4 +17,5 @@ public interface FlightMapper {
     FlightEntity toEntity(FlightDTO dto);
     FlightSummaryDTO toSummaryDTO(FlightEntity flight);
     FlightEntity toEntity(FlightSummaryDTO flight);
+    List<FlightSummaryDTO> toSummaryDTOList(List<FlightEntity> flights);
 }

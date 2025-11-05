@@ -9,4 +9,5 @@ public interface HotelService {
     HotelSummaryDTO getHotel(Long id);
     HotelEntity getHotelEntity(Long id);
     boolean existsHotel(Long id);
+    void updateRating(HotelEntity hotel);
 }

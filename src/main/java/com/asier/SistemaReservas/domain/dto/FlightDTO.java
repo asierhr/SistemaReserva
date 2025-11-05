@@ -1,14 +1,12 @@
 package com.asier.SistemaReservas.domain.dto;
 
-import com.asier.SistemaReservas.domain.entities.SeatEntity;
-import com.asier.SistemaReservas.domain.enums.SeatClass;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Data
@@ -20,6 +18,8 @@ public class FlightDTO {
     private String origin;
     private String destination;
     private String airline;
-    private LocalDateTime flightDay;
+    private LocalDate flightDay;
+    private LocalTime departureTime;
+    private LocalTime arrivalTime;
     private List<SeatDTO> seats;
 }
