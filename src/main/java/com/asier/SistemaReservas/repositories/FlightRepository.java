@@ -14,9 +14,9 @@ public interface FlightRepository extends JpaRepository<FlightEntity, Long> {
     @Query("SELECT f FROM FlightEntity f where f.origin = :origin AND f.destination = :destination AND f.flightDay = :flightDay")
     List<FlightEntity> getFlightsByFlightSearch(@Param("origin") String origin, @Param("destination") String destination, @Param("flightDay") LocalDate flight);
 
-    @Query("SELECT DISTINCT f.origin FROM FlightEntity")
+    @Query("SELECT DISTINCT f.origin FROM FlightEntity f")
     List<String> findAllOrigins();
 
-    @Query("SELECT DISTINCT f.destination FROM FlightEntity")
+    @Query("SELECT DISTINCT f.destination FROM FlightEntity f")
     List<String> findAllDestinations();
 }

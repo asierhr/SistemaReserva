@@ -30,7 +30,7 @@ public class HotelHistoryServiceImpl implements HotelHistoryService {
         UserEntity user = userService.getUserEntity();
         HotelHistoryEntity hotelHistory = hotelHistoryRepository.findByUserId(user.getId());
         hotelHistory.getHotels().remove(hotel);
-        hotelHistory.getHotels().addFirst(hotel);
+        hotelHistory.getHotels().add(0,hotel);
         if(hotelHistory.getHotels().size() > 10) hotelHistory.getHotels().subList(0,10);
         hotelHistoryRepository.save(hotelHistory);
     }

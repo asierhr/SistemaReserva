@@ -20,8 +20,15 @@ public class HotelHistoryEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToMany
+    @JoinTable(
+            name = "hotel_history_hotels",
+            joinColumns = @JoinColumn(name = "history_id"),
+            inverseJoinColumns = @JoinColumn(name = "hotel_id")
+    )
     private List<HotelEntity> hotels = new ArrayList<>();
 
-    @Column(nullable = false)
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 }

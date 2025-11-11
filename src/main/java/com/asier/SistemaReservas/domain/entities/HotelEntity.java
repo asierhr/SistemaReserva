@@ -35,7 +35,13 @@ public class HotelEntity {
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RoomEntity> rooms = new ArrayList<>();
 
-    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CommentEntity> comments = new ArrayList<>();
+
+    @ManyToMany(mappedBy = "hotels")
+    private List<HotelHistoryEntity> hotelHistories = new ArrayList<>();
+
+    @ManyToMany(mappedBy = "hotels")
+    private List<HotelFavouriteEntity> hotelFavourites = new ArrayList<>();
 }
 
