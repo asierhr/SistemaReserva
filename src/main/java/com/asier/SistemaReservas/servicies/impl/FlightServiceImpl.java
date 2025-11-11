@@ -1,6 +1,7 @@
 package com.asier.SistemaReservas.servicies.impl;
 
 import com.asier.SistemaReservas.domain.dto.FlightDTO;
+import com.asier.SistemaReservas.domain.dto.FlightPairDTO;
 import com.asier.SistemaReservas.domain.dto.FlightSummaryDTO;
 import com.asier.SistemaReservas.domain.entities.FlightEntity;
 import com.asier.SistemaReservas.domain.records.FlightSearch;
@@ -12,7 +13,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -56,9 +60,34 @@ public class FlightServiceImpl implements FlightService {
     }
 
     @Override
-    public List<FlightSummaryDTO> getFlightsBySearch(FlightSearch flightSearch) {
-        List<FlightEntity> flights = flightRepository.getFlightsByFlightSearch(flightSearch.origin(), flightSearch.destination(), flightSearch.flightDay());
-        return flightMapper.toSummaryDTOList(flights);
+    public List<FlightPairDTO> getFlightsBySearch(FlightSearch flightSearch) {
+
+        List<FlightEntity> outboundFlights = flightRepository.getFlightsByFlightSearch(
+                flightSearch.origin(),
+                flightSearch.destination(),
+                flightSearch.departureDay()
+        );
+
+        List<FlightEntity> returnFlights = flightRepository.getFlightsByFlightSearch(
+                flightSearch.destination(),
+                flightSearch.origin(),
+                flightSearch.returnDay()
+        );
+
+        List<FlightSummaryDTO> outboundDTOs = flightMapper.toSummaryDTOList(outboundFlights);
+        List<FlightSummaryDTO> returnDTOs = flightMapper.toSummaryDTOList(returnFlights);
+
+        List<FlightPairDTO> flightPairs = new ArrayList<>();
+
+        for (FlightSummaryDTO outbound : outboundDTOs) {
+            for (FlightSummaryDTO inbound : returnDTOs) {
+                if (outbound.getAirline().equals(inbound.getAirline()) &&
+                        inbound.getFlightDay().isAfter(outbound.getFlightDay())) {
+                    flightPairs.add(new FlightPairDTO(outbound, inbound));
+                }
+            }
+        }
+        return flightPairs;
     }
 
     @Override

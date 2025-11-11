@@ -1,11 +1,13 @@
 package com.asier.SistemaReservas.servicies;
 
 import com.asier.SistemaReservas.domain.dto.FlightDTO;
+import com.asier.SistemaReservas.domain.dto.FlightPairDTO;
 import com.asier.SistemaReservas.domain.dto.FlightSummaryDTO;
 import com.asier.SistemaReservas.domain.entities.FlightEntity;
 import com.asier.SistemaReservas.domain.records.FlightSearch;
 
 import java.util.List;
+import java.util.Map;
 
 public interface FlightService {
     FlightDTO createFlight(FlightDTO flight);
@@ -13,7 +15,7 @@ public interface FlightService {
     FlightSummaryDTO getSummaryFlight(Long id);
     boolean existsById(Long id);
     FlightEntity getFlightEntity(Long id);
-    List<FlightSummaryDTO> getFlightsBySearch(FlightSearch flightSearch);
+    List<FlightPairDTO> getFlightsBySearch(FlightSearch flightSearch);
     List<String> getAllOrigins();
     List<String> getAllDestinations();
 }

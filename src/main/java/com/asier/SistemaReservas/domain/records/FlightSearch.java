@@ -2,5 +2,5 @@ package com.asier.SistemaReservas.domain.records;
 
 import java.time.LocalDate;
 
-public record FlightSearch(String origin, String destination, LocalDate flightDay) {
+public record FlightSearch(String origin, String destination, LocalDate departureDay, LocalDate returnDay) {
 }

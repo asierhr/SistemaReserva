@@ -20,4 +20,6 @@ public class FlightReservationEntity extends ReservationEntity{
 
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<SeatEntity> seat;
+
+
 }
