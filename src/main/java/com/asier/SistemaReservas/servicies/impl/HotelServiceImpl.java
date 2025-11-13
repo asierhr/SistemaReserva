@@ -4,6 +4,8 @@ import com.asier.SistemaReservas.domain.dto.HotelDTO;
 import com.asier.SistemaReservas.domain.dto.HotelSummaryDTO;
 import com.asier.SistemaReservas.domain.entities.CommentEntity;
 import com.asier.SistemaReservas.domain.entities.HotelEntity;
+import com.asier.SistemaReservas.domain.enums.RoomType;
+import com.asier.SistemaReservas.domain.records.HotelSearch;
 import com.asier.SistemaReservas.mapper.HotelMapper;
 import com.asier.SistemaReservas.repositories.HotelRepository;
 import com.asier.SistemaReservas.servicies.HotelHistoryService;

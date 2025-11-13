@@ -32,4 +32,14 @@ public class FlightController {
     public List<FlightPairDTO> getFlightsBySearch(@RequestBody FlightSearch flightSearch){
         return flightService.getFlightsBySearch(flightSearch);
     }
+
+    @GetMapping(path = "/flights/origins")
+    public List<String> getAllOrigins(){
+        return flightService.getAllOrigins();
+    }
+
+    @GetMapping(path = "/flights/destinations")
+    public List<String> getAllDestinations(){
+        return flightService.getAllDestinations();
+    }
 }
