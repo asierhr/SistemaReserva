@@ -42,10 +42,8 @@ public class RoomServiceImpl implements RoomService {
         int totalGuests = hotelSearch.guests();
         String city = hotelSearch.city();
 
-        // Combinaciones de tipos de habitación
         List<List<RoomType>> combinations = findRoomCombinations(totalGuests);
 
-        // Todos los tipos permitidos en las combinaciones
         List<RoomType> allowedTypes = combinations.stream()
                 .flatMap(List::stream)
                 .distinct()
@@ -60,7 +58,7 @@ public class RoomServiceImpl implements RoomService {
         Set<List<RoomDTO>> matchingRoomCombinations = new HashSet<>();
 
 
-        List<RoomEntity> candidateRooms = roomRepository.findRoomsNearAverage(city, allowedTypes, minPrice, maxPrice);
+        List<RoomEntity> candidateRooms = roomRepository.findRoomsNearAverage(city, allowedTypes, minPrice, maxPrice, hotelSearch.checkIn(), hotelSearch.checkOut());
 
         Map<Long, List<RoomEntity>> roomsByHotel = candidateRooms.stream()
                 .collect(Collectors.groupingBy(r -> r.getHotel().getId()));

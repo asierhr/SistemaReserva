@@ -11,6 +11,7 @@ import java.util.List;
 public interface RoomMapper {
     @Mapping(source = "hotel.id", target = "hotelId")
     RoomDTO toDTO(RoomEntity room);
+    RoomEntity toEntity(RoomDTO room);
     List<RoomDTO> toDTOList(List<RoomEntity> rooms);
     List<RoomEntity> toEntityList(List<RoomDTO> room);
 }

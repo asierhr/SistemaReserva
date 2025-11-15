@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -24,9 +26,8 @@ public class RoomEntity {
     @JoinColumn(name = "hotel_id")
     private HotelEntity hotel;
 
-    @ManyToOne
-    @JoinColumn(name = "reservation_id")
-    private HotelReservationEntity reservation;
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoomReservationEntity> reservations = new ArrayList<>();
 
     @Column(nullable = false)
     private String numRoom;

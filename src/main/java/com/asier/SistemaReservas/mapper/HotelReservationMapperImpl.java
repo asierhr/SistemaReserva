@@ -2,8 +2,11 @@ package com.asier.SistemaReservas.mapper;
 
 import com.asier.SistemaReservas.domain.dto.HotelReservationDTO;
 import com.asier.SistemaReservas.domain.entities.HotelReservationEntity;
+import com.asier.SistemaReservas.domain.entities.RoomReservationEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -21,20 +24,34 @@ public class HotelReservationMapperImpl implements HotelReservationMapper{
                 .reservationDate(hotelReservation.getReservationDate())
                 .user(userMapper.toDTO(hotelReservation.getUser()))
                 .hotel(hotelMapper.toSummaryDTO(hotelReservation.getHotel()))
-                .rooms(roomMapper.toDTOList(hotelReservation.getRoom()))
+                .rooms(hotelReservation.getRooms().stream()
+                        .map(rr -> roomMapper.toDTO(rr.getRoom()))
+                        .toList())
                 .build();
     }
 
     @Override
     public HotelReservationEntity toEntity(HotelReservationDTO hotelReservation) {
-        return HotelReservationEntity.builder()
+        HotelReservationEntity reservation = HotelReservationEntity.builder()
                 .id(hotelReservation.getId())
                 .totalPrice(hotelReservation.getTotalPrice())
                 .bookingStatus(hotelReservation.getBookingStatus())
                 .reservationDate(hotelReservation.getReservationDate())
                 .user(userMapper.toEntity(hotelReservation.getUser()))
                 .hotel(hotelMapper.toEntity(hotelReservation.getHotel()))
-                .room(roomMapper.toEntityList(hotelReservation.getRooms()))
                 .build();
+
+        List<RoomReservationEntity> roomReservations = hotelReservation.getRooms().stream()
+                .map(roomDTO -> {
+                    RoomReservationEntity rr = new RoomReservationEntity();
+                    rr.setReservation(reservation);
+                    rr.setRoom(roomMapper.toEntity(roomDTO));
+                    return rr;
+                })
+                .toList();
+
+        reservation.setRooms(roomReservations);
+
+        return reservation;
     }
 }

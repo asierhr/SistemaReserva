@@ -24,8 +24,8 @@ public class HotelReservationEntity extends ReservationEntity {
     @JoinColumn(name = "hotel_id")
     private HotelEntity hotel;
 
-    @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<RoomEntity> room;
+    @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoomReservationEntity> rooms = new ArrayList<>();
 
     private LocalDate checkIn;
     private LocalDate checkOut;

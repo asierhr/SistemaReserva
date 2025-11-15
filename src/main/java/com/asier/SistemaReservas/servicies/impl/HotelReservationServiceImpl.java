@@ -4,6 +4,7 @@ import com.asier.SistemaReservas.domain.dto.HotelReservationDTO;
 import com.asier.SistemaReservas.domain.dto.RoomDTO;
 import com.asier.SistemaReservas.domain.entities.HotelReservationEntity;
 import com.asier.SistemaReservas.domain.entities.RoomEntity;
+import com.asier.SistemaReservas.domain.entities.RoomReservationEntity;
 import com.asier.SistemaReservas.domain.enums.BookingStatus;
 import com.asier.SistemaReservas.mapper.HotelReservationMapper;
 import com.asier.SistemaReservas.repositories.HotelReservationRepository;
@@ -17,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -34,29 +37,41 @@ public class HotelReservationServiceImpl implements HotelReservationService {
         BigDecimal totalPrice = BigDecimal.ZERO;
         for(RoomEntity room: rooms){
             if(!id.equals(room.getHotel().getId())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Seat " + room.getId() + " does not belong to flight " + id);
-            if(!room.isAvailable()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room not available");
+                    "Room " + room.getId() + " does not belong to hotel " + id);
             totalPrice = totalPrice.add(room.getCostPerNight());
         }
         return totalPrice;
     }
 
     @Override
-    public HotelReservationDTO createReservation(Long id, List<Long> roomIds) {
+    public HotelReservationDTO createReservation(Long id, List<Long> roomIds, LocalDate checkIn, LocalDate checkOut) {
         if(!hotelService.existsHotel(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hotel not found");
         List<RoomEntity> rooms = roomService.getRoomsFromIds(roomIds);
+
         HotelReservationEntity hotel = HotelReservationEntity.builder()
                 .reservationDate(LocalDateTime.now())
                 .totalPrice(validateRooms(id, rooms))
                 .bookingStatus(BookingStatus.PENDING_PAYMENT)
                 .user(user.getUserEntity())
                 .hotel(hotelService.getHotelEntity(id))
-                .room(rooms)
+                .checkIn(checkIn)
+                .checkOut(checkOut)
                 .build();
-        for(RoomEntity room : rooms){
+
+        List<RoomReservationEntity> roomReservations = new ArrayList<>();
+
+        for (RoomEntity room : rooms) {
+            RoomReservationEntity rr = RoomReservationEntity.builder()
+                    .room(room)
+                    .reservation(hotel)
+                    .build();
+
+            roomReservations.add(rr);
+
             room.setAvailable(false);
-            room.setReservation(hotel);
         }
+        hotel.setRooms(roomReservations);
+
         HotelReservationEntity savedReservation = hotelReservationRepository.save(hotel);
         return hotelReservationMapper.toDTO(savedReservation);
     }
