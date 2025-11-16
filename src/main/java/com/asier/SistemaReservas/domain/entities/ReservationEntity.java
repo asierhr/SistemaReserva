@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -32,4 +33,7 @@ public abstract class ReservationEntity {
 
     @ManyToOne
     private UserEntity user;
+
+    @OneToMany(mappedBy = "reservation")
+    private List<PaymentEntity> payments;
 }

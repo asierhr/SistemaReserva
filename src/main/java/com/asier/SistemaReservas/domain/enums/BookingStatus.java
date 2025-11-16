@@ -8,7 +8,8 @@ public enum BookingStatus {
     REFUNDED,
     COMPLETED,
     NOT_SHOWN,
-    CANCELED
+    CANCELED,
+    PAYMENT_FAILED
 }
 
 //hello

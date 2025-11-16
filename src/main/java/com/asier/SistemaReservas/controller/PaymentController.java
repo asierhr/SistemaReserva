@@ -1,11 +1,51 @@
 package com.asier.SistemaReservas.controller;
 
+import com.asier.SistemaReservas.domain.records.CreatePaymentRequest;
+import com.asier.SistemaReservas.domain.records.PaymentResponse;
 import com.asier.SistemaReservas.servicies.PaymentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/payments")
+@Slf4j
 public class PaymentController {
     private final PaymentService paymentService;
+
+    @PostMapping
+    public ResponseEntity<PaymentResponse> createPayment(@RequestBody CreatePaymentRequest request) {
+        log.info("Received create payment request: {}", request);
+        PaymentResponse response = paymentService.createPayment(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{paymentId}")
+    public ResponseEntity<PaymentResponse> getPaymentStatus(@PathVariable Long paymentId) {
+        PaymentResponse response = paymentService.getPaymentStatus(paymentId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refund")
+    public ResponseEntity<String> initiateRefund(
+            @RequestParam Long reservationId,
+            @RequestParam BigDecimal amount
+    ) {
+        paymentService.initiateRefund(reservationId, amount);
+        return ResponseEntity.ok("Refund initiated successfully");
+    }
+
+    @PostMapping("/webhook")
+    public ResponseEntity<String> handleWebhook(
+            @RequestBody String payload,
+            @RequestHeader("Stripe-Signature") String sigHeader
+    ) {
+        log.info("Received Stripe webhook");
+        paymentService.processWebhook(payload, sigHeader);
+        return ResponseEntity.ok("Webhook processed");
+    }
 }

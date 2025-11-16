@@ -1,0 +1,331 @@
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class StripePaymentService implements PaymentService {
+
+    private final PaymentRepository paymentRepository;
+    private final ReservationService reservationService;
+
+    @Value("${stripe.webhook-secret}")
+    private String webhookSecret;
+
+    @Value("${stripe.currency}")
+    private String defaultCurrency;
+
+    /**
+     * PASO 1: Crear un PaymentIntent (el usuario AÚN NO ha pagado)
+     */
+    @Transactional
+    @Override
+    public PaymentResponse createPayment(CreatePaymentRequest request) {
+        log.info("Creating payment for reservation: {}", request.getReservationId());
+
+        // 1. Validar que la reserva existe y está en estado válido
+        ReservationEntity reservation = reservationService
+            .getReservation(request.getReservationId());
+
+        if (reservation.getBookingStatus() == BookingStatus.PAID) {
+            throw new IllegalStateException("Reservation already paid");
+        }
+
+        // 2. Verificar si ya existe un payment intent para esta reserva
+        Optional<PaymentEntity> existingPayment = paymentRepository
+            .findByReservationIdAndStatus(
+                request.getReservationId(),
+                PaymentStatus.PENDING
+            );
+
+        if (existingPayment.isPresent()) {
+            log.info("Reusing existing payment intent: {}",
+                existingPayment.get().getStripePaymentIntentId());
+            return mapToResponse(existingPayment.get());
+        }
+
+        try {
+            // 3. Crear PaymentIntent en Stripe
+            PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                .setAmount(toStripeAmount(request.getAmount())) // Convertir a centavos
+                .setCurrency(request.getCurrency().toLowerCase())
+                .setDescription("Reservation #" + request.getReservationId())
+                .putMetadata("reservation_id", request.getReservationId().toString())
+                .putMetadata("customer_email", request.getCustomerEmail())
+                // Métodos de pago permitidos
+                .addPaymentMethodType("card")
+                .addPaymentMethodType("sepa_debit")
+                // Configuración adicional
+                .setAutomaticPaymentMethods(
+                    PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
+                        .setEnabled(true)
+                        .build()
+                )
+                .build();
+
+            PaymentIntent paymentIntent = PaymentIntent.create(params);
+
+            // 4. Guardar en nuestra BD
+            PaymentEntity payment = PaymentEntity.builder()
+                .stripePaymentIntentId(paymentIntent.getId())
+                .reservation(reservation)
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .status(PaymentStatus.PENDING)
+                .build();
+
+            paymentRepository.save(payment);
+
+            log.info("Payment intent created: {}", paymentIntent.getId());
+
+            return PaymentResponse.builder()
+                .paymentId(payment.getId())
+                .stripePaymentIntentId(paymentIntent.getId())
+                .clientSecret(paymentIntent.getClientSecret()) // ⚠️ Enviar al frontend
+                .status(PaymentStatus.PENDING)
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .createdAt(payment.getCreatedAt())
+                .build();
+
+        } catch (StripeException e) {
+            log.error("Stripe error creating payment intent", e);
+            throw new PaymentProcessingException("Failed to create payment", e);
+        }
+    }
+
+    /**
+     * PASO 2: Procesar webhook cuando Stripe confirma el pago
+     */
+    @Transactional
+    @Override
+    public void processWebhook(String payload, String signatureHeader) {
+        log.info("Processing Stripe webhook");
+
+        Event event;
+
+        try {
+            // 1. CRÍTICO: Validar firma del webhook
+            event = Webhook.constructEvent(
+                payload,
+                signatureHeader,
+                webhookSecret
+            );
+        } catch (SignatureVerificationException e) {
+            log.error("⚠️ Invalid webhook signature!");
+            throw new SecurityException("Invalid webhook signature");
+        }
+
+        // 2. Procesar según tipo de evento
+        switch (event.getType()) {
+            case "payment_intent.succeeded":
+                handlePaymentIntentSucceeded(event);
+                break;
+
+            case "payment_intent.payment_failed":
+                handlePaymentIntentFailed(event);
+                break;
+
+            case "payment_intent.requires_action":
+                handlePaymentIntentRequiresAction(event);
+                break;
+
+            case "charge.refunded":
+                handleChargeRefunded(event);
+                break;
+
+            default:
+                log.info("Unhandled webhook event type: {}", event.getType());
+        }
+    }
+
+    /**
+     * Maneja el evento de pago exitoso
+     */
+    private void handlePaymentIntentSucceeded(Event event) {
+        PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer()
+            .getObject()
+            .orElseThrow(() -> new IllegalStateException("PaymentIntent not found in event"));
+
+        log.info("Payment succeeded: {}", paymentIntent.getId());
+
+        // 1. Buscar el pago en nuestra BD (idempotencia)
+        PaymentEntity payment = paymentRepository
+            .findByStripePaymentIntentId(paymentIntent.getId())
+            .orElseThrow(() -> new PaymentNotFoundException(paymentIntent.getId()));
+
+        // 2. Verificar idempotencia
+        if (payment.getStatus() == PaymentStatus.SUCCEEDED) {
+            log.info("Payment already processed, skipping: {}", paymentIntent.getId());
+            return;
+        }
+
+        // 3. Actualizar el pago
+        payment.setStatus(PaymentStatus.SUCCEEDED);
+        payment.setPaidAt(LocalDateTime.now());
+        payment.setWebhookReceivedAt(LocalDateTime.now());
+
+        // Extraer info de la tarjeta si existe
+        if (paymentIntent.getCharges() != null &&
+            paymentIntent.getCharges().getData().size() > 0) {
+            Charge charge = paymentIntent.getCharges().getData().get(0);
+            payment.setStripeChargeId(charge.getId());
+
+            if (charge.getPaymentMethodDetails() != null &&
+                charge.getPaymentMethodDetails().getCard() != null) {
+                payment.setCardLast4(charge.getPaymentMethodDetails().getCard().getLast4());
+                payment.setCardBrand(charge.getPaymentMethodDetails().getCard().getBrand());
+            }
+        }
+
+        paymentRepository.save(payment);
+
+        // 4. Actualizar la reserva
+        ReservationEntity reservation = payment.getReservation();
+        reservation.setBookingStatus(BookingStatus.PAID);
+        reservationService.updateReservation(reservation);
+
+        log.info("✅ Payment and reservation updated successfully");
+
+        // 5. Disparar eventos adicionales (emails, notificaciones, etc.)
+        // eventPublisher.publishEvent(new PaymentSucceededEvent(payment));
+    }
+
+    /**
+     * Maneja el evento de pago fallido
+     */
+    private void handlePaymentIntentFailed(Event event) {
+        PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer()
+            .getObject()
+            .orElseThrow(() -> new IllegalStateException("PaymentIntent not found"));
+
+        log.warn("Payment failed: {}", paymentIntent.getId());
+
+        PaymentEntity payment = paymentRepository
+            .findByStripePaymentIntentId(paymentIntent.getId())
+            .orElseThrow(() -> new PaymentNotFoundException(paymentIntent.getId()));
+
+        if (payment.getStatus() == PaymentStatus.FAILED) {
+            return; // Ya procesado
+        }
+
+        payment.setStatus(PaymentStatus.FAILED);
+        payment.setFailedAt(LocalDateTime.now());
+        payment.setWebhookReceivedAt(LocalDateTime.now());
+        payment.setFailureMessage(
+            paymentIntent.getLastPaymentError() != null
+                ? paymentIntent.getLastPaymentError().getMessage()
+                : "Unknown error"
+        );
+
+        paymentRepository.save(payment);
+
+        // Actualizar reserva
+        ReservationEntity reservation = payment.getReservation();
+        reservation.setBookingStatus(BookingStatus.PAYMENT_FAILED);
+        reservationService.updateReservation(reservation);
+
+        log.info("❌ Payment marked as failed");
+    }
+
+    /**
+     * Maneja cuando se requiere acción adicional (3D Secure)
+     */
+    private void handlePaymentIntentRequiresAction(Event event) {
+        PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer()
+            .getObject()
+            .orElseThrow();
+
+        log.info("Payment requires action (3DS): {}", paymentIntent.getId());
+
+        PaymentEntity payment = paymentRepository
+            .findByStripePaymentIntentId(paymentIntent.getId())
+            .orElseThrow(() -> new PaymentNotFoundException(paymentIntent.getId()));
+
+        payment.setStatus(PaymentStatus.REQUIRES_ACTION);
+        payment.setWebhookReceivedAt(LocalDateTime.now());
+        paymentRepository.save(payment);
+    }
+
+    /**
+     * Maneja reembolsos
+     */
+    private void handleChargeRefunded(Event event) {
+        Charge charge = (Charge) event.getDataObjectDeserializer()
+            .getObject()
+            .orElseThrow();
+
+        log.info("Charge refunded: {}", charge.getId());
+
+        PaymentEntity payment = paymentRepository
+            .findByStripeChargeId(charge.getId())
+            .orElseThrow(() -> new PaymentNotFoundException(charge.getId()));
+
+        payment.setStatus(PaymentStatus.REFUNDED);
+        paymentRepository.save(payment);
+
+        // Actualizar reserva
+        ReservationEntity reservation = payment.getReservation();
+        reservation.setBookingStatus(BookingStatus.REFUNDED);
+        reservationService.updateReservation(reservation);
+    }
+
+    /**
+     * Obtener estado de un pago
+     */
+    @Override
+    public PaymentResponse getPaymentStatus(Long paymentId) {
+        PaymentEntity payment = paymentRepository.findById(paymentId)
+            .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+
+        return mapToResponse(payment);
+    }
+
+    /**
+     * Reembolsar un pago
+     */
+    @Transactional
+    @Override
+    public void refundPayment(Long paymentId, BigDecimal amount) {
+        PaymentEntity payment = paymentRepository.findById(paymentId)
+            .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+
+        if (payment.getStatus() != PaymentStatus.SUCCEEDED) {
+            throw new IllegalStateException("Can only refund succeeded payments");
+        }
+
+        try {
+            RefundCreateParams params = RefundCreateParams.builder()
+                .setPaymentIntent(payment.getStripePaymentIntentId())
+                .setAmount(amount != null ? toStripeAmount(amount) : null) // null = full refund
+                .build();
+
+            Refund refund = Refund.create(params);
+
+            log.info("Refund created: {}", refund.getId());
+
+            // El webhook actualizará el estado
+
+        } catch (StripeException e) {
+            log.error("Error creating refund", e);
+            throw new PaymentProcessingException("Failed to refund payment", e);
+        }
+    }
+
+    // === HELPERS ===
+
+    /**
+     * Convierte euros a centavos para Stripe
+     */
+    private Long toStripeAmount(BigDecimal amount) {
+        return amount.multiply(new BigDecimal("100")).longValue();
+    }
+
+    private PaymentResponse mapToResponse(PaymentEntity payment) {
+        return PaymentResponse.builder()
+            .paymentId(payment.getId())
+            .stripePaymentIntentId(payment.getStripePaymentIntentId())
+            .status(payment.getStatus())
+            .amount(payment.getAmount())
+            .currency(payment.getCurrency())
+            .createdAt(payment.getCreatedAt())
+            .build();
+    }
+}
