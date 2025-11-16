@@ -1,4 +1,4 @@
-package com.asier.SistemaReservas.components;
+package com.asier.SistemaReservas.config;
 
 import com.asier.SistemaReservas.domain.entities.FlightReservationEntity;
 import com.asier.SistemaReservas.domain.entities.SeatEntity;
