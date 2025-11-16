@@ -18,15 +18,17 @@ public interface RoomRepository extends JpaRepository<RoomEntity, Long> {
     SELECT DISTINCT r
     FROM RoomEntity r
     JOIN r.hotel h
-    LEFT JOIN r.reservations rr
-    LEFT JOIN rr.reservation res
     WHERE h.location.city = :city
       AND r.type IN :roomTypes
       AND r.costPerNight BETWEEN :minPrice AND :maxPrice
-      AND (
-           rr IS NULL
-           OR res.checkOut <= :checkIn
-           OR res.checkIn >= :checkOut
+      AND NOT EXISTS (
+          SELECT 1
+          FROM RoomReservationEntity rr
+          JOIN rr.reservation hr
+          WHERE rr.room = r
+            AND hr.bookingStatus NOT IN ('CANCELLED', 'REFUNDED')
+            AND hr.checkIn < :checkOut
+            AND hr.checkOut > :checkIn
       )
 """)
     List<RoomEntity> findRoomsNearAverage(

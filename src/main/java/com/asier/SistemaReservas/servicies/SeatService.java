@@ -12,4 +12,5 @@ public interface SeatService {
     Map<SeatClass,List<SeatDTO>> getSeatsFromFlight(Long id);
     List<SeatEntity> getSeatFromIds(List<Long> seatIds);
     void updateListSeatsAvailability(List<SeatEntity> seats);
+    List<SeatEntity> getAvailableSeats(Long id);
 }

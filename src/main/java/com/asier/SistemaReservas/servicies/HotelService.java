@@ -3,9 +3,7 @@ package com.asier.SistemaReservas.servicies;
 import com.asier.SistemaReservas.domain.dto.HotelDTO;
 import com.asier.SistemaReservas.domain.dto.HotelSummaryDTO;
 import com.asier.SistemaReservas.domain.entities.HotelEntity;
-import com.asier.SistemaReservas.domain.records.HotelSearch;
 
-import java.util.List;
 
 public interface HotelService {
     HotelDTO createHotel(HotelDTO hotel);

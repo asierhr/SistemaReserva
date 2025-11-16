@@ -6,6 +6,7 @@ import com.asier.SistemaReservas.domain.entities.RoomReservationEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -53,5 +54,25 @@ public class HotelReservationMapperImpl implements HotelReservationMapper{
         reservation.setRooms(roomReservations);
 
         return reservation;
+    }
+
+    @Override
+    public List<HotelReservationDTO> toDTOList(List<HotelReservationEntity> hotelReservation) {
+        List<HotelReservationDTO> hotelReservationDTOS = new ArrayList<>();
+        for(HotelReservationEntity hotel: hotelReservation){
+            HotelReservationDTO hotelReservationDTO = HotelReservationDTO.builder()
+                    .id(hotel.getId())
+                    .totalPrice(hotel.getTotalPrice())
+                    .bookingStatus(hotel.getBookingStatus())
+                    .reservationDate(hotel.getReservationDate())
+                    .user(userMapper.toDTO(hotel.getUser()))
+                    .hotel(hotelMapper.toSummaryDTO(hotel.getHotel()))
+                    .rooms(hotel.getRooms().stream()
+                            .map(rr -> roomMapper.toDTO(rr.getRoom()))
+                            .toList())
+                    .build();
+            hotelReservationDTOS.add(hotelReservationDTO);
+        }
+        return hotelReservationDTOS;
     }
 }

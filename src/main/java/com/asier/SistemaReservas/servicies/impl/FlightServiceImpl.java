@@ -8,15 +8,14 @@ import com.asier.SistemaReservas.domain.records.FlightSearch;
 import com.asier.SistemaReservas.mapper.FlightMapper;
 import com.asier.SistemaReservas.repositories.FlightRepository;
 import com.asier.SistemaReservas.servicies.FlightService;
+import com.asier.SistemaReservas.servicies.SeatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 
 @Service
@@ -24,6 +23,7 @@ import java.util.Map;
 public class FlightServiceImpl implements FlightService {
     private final FlightRepository flightRepository;
     private final FlightMapper flightMapper;
+    private final SeatService seatService;
 
     @Override
     public FlightDTO createFlight(FlightDTO flight) {
@@ -74,8 +74,12 @@ public class FlightServiceImpl implements FlightService {
                 flightSearch.returnDay()
         );
 
-        List<FlightSummaryDTO> outboundDTOs = flightMapper.toSummaryDTOList(outboundFlights);
-        List<FlightSummaryDTO> returnDTOs = flightMapper.toSummaryDTOList(returnFlights);
+        List<FlightSummaryDTO> outboundDTOs = flightMapper.toSummaryDTOList(outboundFlights).stream()
+                .filter(f -> seatService.getAvailableSeats(f.getId()).size() >= flightSearch.passengers())
+                .toList();
+        List<FlightSummaryDTO> returnDTOs = flightMapper.toSummaryDTOList(returnFlights).stream()
+                .filter(f -> seatService.getAvailableSeats(f.getId()).size() >= flightSearch.passengers())
+                .toList();
 
         List<FlightPairDTO> flightPairs = new ArrayList<>();
 

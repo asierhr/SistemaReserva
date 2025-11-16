@@ -6,6 +6,7 @@ import com.asier.SistemaReservas.domain.dto.SeatDTO;
 import com.asier.SistemaReservas.domain.entities.FlightReservationEntity;
 import com.asier.SistemaReservas.domain.entities.SeatEntity;
 import com.asier.SistemaReservas.domain.enums.BookingStatus;
+import com.asier.SistemaReservas.domain.records.FlightSearch;
 import com.asier.SistemaReservas.mapper.FlightReservationMapper;
 import com.asier.SistemaReservas.repositories.FlightReservationRepository;
 import com.asier.SistemaReservas.servicies.FlightReservationService;
@@ -52,10 +53,16 @@ public class FlightReservationServiceImpl implements FlightReservationService {
 
     @Override
     @Transactional
-    public FlightReservationDTO createFlightReservation(Long id, List<Long> seatsId) {
+    public FlightReservationDTO createFlightReservation(Long id, FlightSearch flightSearch) {
         if(!flightService.existsById(id))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flight not found");
-        List<SeatEntity> seats = seatService.getSeatFromIds(seatsId);
+        List<SeatEntity> availableSeats = seatService.getAvailableSeats(id);
+        if (availableSeats.size() < flightSearch.passengers()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    String.format("Not enough seats available. Required: %d, Available: %d",
+                            flightSearch.passengers(), availableSeats.size()));
+        }
+        List<SeatEntity> seats = availableSeats.subList(0, flightSearch.passengers());
         FlightReservationEntity flightReservationEntity = FlightReservationEntity.builder()
                 .reservationDate(LocalDateTime.now())
                 .bookingStatus(BookingStatus.PENDING_PAYMENT)
@@ -63,6 +70,7 @@ public class FlightReservationServiceImpl implements FlightReservationService {
                 .user(userService.getUserEntity())
                 .flight(flightService.getFlightEntity(id))
                 .seat(seats)
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
                 .build();
         for(SeatEntity seat: flightReservationEntity.getSeat()){
             seat.setReservation(flightReservationEntity);
@@ -70,5 +78,15 @@ public class FlightReservationServiceImpl implements FlightReservationService {
         }
         FlightReservationEntity savedFlightReservation = flightReservationRepository.save(flightReservationEntity);
         return flightReservationMapper.toDTO(savedFlightReservation);
+    }
+
+    @Override
+    public List<FlightReservationEntity> getFlightReservationsExpired() {
+        return flightReservationRepository.findExpiredPendingReservations(LocalDateTime.now());
+    }
+
+    @Override
+    public void updateFlightsReservations(List<FlightReservationEntity> flightReservations) {
+        flightReservationRepository.saveAll(flightReservations);
     }
 }

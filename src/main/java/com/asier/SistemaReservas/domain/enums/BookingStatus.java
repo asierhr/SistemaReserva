@@ -6,10 +6,6 @@ public enum BookingStatus {
     CONFIRMED,
     EXPIRED,
     REFUNDED,
-    COMPLETED,
     NOT_SHOWN,
-    CANCELED,
     PAYMENT_FAILED
 }
-
-//hello

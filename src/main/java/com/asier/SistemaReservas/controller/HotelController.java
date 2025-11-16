@@ -27,11 +27,6 @@ public class HotelController {
         return hotelService.getHotel(id);
     }
 
-    /*@GetMapping(path = "/hotels/cities")
-    public List<String> findAllCities(){
-        return hotelService.
-    }*/
-
     @GetMapping(path = "/hotels/search")
     public Set<List<RoomDTO>> getRoomsBySearch(@RequestBody HotelSearch hotelSearch){
         return roomService.getRoomsBySearch(hotelSearch);

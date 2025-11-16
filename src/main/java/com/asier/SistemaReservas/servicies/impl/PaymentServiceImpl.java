@@ -51,14 +51,12 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponse createPayment(CreatePaymentRequest request) {
         log.info("Creating payment for reservation: {}", request.reservationId());
 
-        // 1. Validar que la reserva existe y está en estado válido
         ReservationEntity reservation = reservationService.getReservation(request.reservationId());
 
         if (reservation.getBookingStatus() == BookingStatus.PAID) {
             throw new IllegalStateException("Reservation already paid");
         }
 
-        // 2. Verificar si ya existe un payment intent pendiente (idempotencia)
         Optional<PaymentEntity> existingPayment = paymentRepository
                 .findByReservationIdAndStatus(request.reservationId(), PaymentStatus.PENDING);
 
@@ -68,14 +66,12 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // 3. Crear PaymentIntent en Stripe
             PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
-                    .setAmount(toStripeAmount(request.amount())) // Convertir a centavos
+                    .setAmount(toStripeAmount(request.amount()))
                     .setCurrency(request.currency() != null ? request.currency().toLowerCase() : defaultCurrency.toLowerCase())
                     .setDescription("Reservation #" + request.reservationId())
                     .putMetadata("reservation_id", request.reservationId().toString())
                     .putMetadata("customer_email", request.customerEmail() != null ? request.customerEmail() : "")
-                    // Métodos de pago permitidos
                     .setAutomaticPaymentMethods(
                             PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
                                     .setEnabled(true)
@@ -85,7 +81,6 @@ public class PaymentServiceImpl implements PaymentService {
 
             PaymentIntent paymentIntent = PaymentIntent.create(params);
 
-            // 4. Guardar en nuestra BD
             PaymentEntity payment = PaymentEntity.builder()
                     .stripePaymentIntentId(paymentIntent.getId())
                     .reservation(reservation)
@@ -110,45 +105,39 @@ public class PaymentServiceImpl implements PaymentService {
                     .build();
 
         } catch (CardException e) {
-            // Error relacionado con la tarjeta
             log.error("Card error: {}", e.getMessage());
             throw new PaymentCardException("Card declined: " + e.getMessage(), e);
 
         } catch (RateLimitException e) {
-            // Demasiadas requests
             log.error("Rate limit exceeded", e);
             throw new PaymentProcessingException("Too many requests, try again later", e);
 
         } catch (InvalidRequestException e) {
-            // Request inválido
             log.error("Invalid request to Stripe: {}", e.getMessage());
             throw new PaymentProcessingException("Invalid payment request: " + e.getMessage(), e);
 
         } catch (AuthenticationException e) {
-            // API key inválida
             log.error("Authentication error with Stripe", e);
             throw new PaymentConfigurationException("Payment system authentication failed", e);
 
         } catch (ApiConnectionException e) {
-            // Error de red
+
             log.error("Network error connecting to Stripe", e);
             throw new PaymentProcessingException("Payment service unavailable, try again", e);
 
         } catch (ApiException e) {
-            // Error genérico de Stripe
+
             log.error("Stripe API error", e);
             throw new PaymentProcessingException("Payment processing failed: " + e.getMessage(), e);
 
         } catch (StripeException e) {
-            // Cualquier otra excepción de Stripe
+
             log.error("Unexpected Stripe error", e);
             throw new PaymentProcessingException("Payment failed: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Procesa webhooks de Stripe
-     */
+
     @Transactional
     @Override
     public void processWebhook(String payload, String signatureHeader) {
@@ -157,10 +146,9 @@ public class PaymentServiceImpl implements PaymentService {
         Event event;
 
         try {
-            // ✅ CRÍTICO: Validar firma del webhook
             event = Webhook.constructEvent(payload, signatureHeader, webhookSecret);
         } catch (SignatureVerificationException e) {
-            log.error("⚠️ Invalid webhook signature!");
+            log.error("Invalid webhook signature!");
             throw new SecurityException("Invalid webhook signature", e);
         } catch (Exception e) {
             log.error("Error parsing webhook", e);
@@ -169,7 +157,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         log.info("Webhook event type: {}", event.getType());
 
-        // Procesar según tipo de evento
         switch (event.getType()) {
             case "payment_intent.succeeded":
                 handlePaymentIntentSucceeded(event);
@@ -202,23 +189,19 @@ public class PaymentServiceImpl implements PaymentService {
 
         log.info("Payment succeeded: {}", paymentIntent.getId());
 
-        // Buscar el pago en nuestra BD
         PaymentEntity payment = paymentRepository
                 .findByStripePaymentIntentId(paymentIntent.getId())
                 .orElseThrow(() -> new PaymentNotFoundException(paymentIntent.getId()));
 
-        // Verificar idempotencia
         if (payment.getStatus() == PaymentStatus.SUCCESS) {
             log.info("Payment already processed, skipping: {}", paymentIntent.getId());
             return;
         }
 
-        // Actualizar el pago
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setPaidAt(LocalDateTime.now());
         payment.setWebhookReceivedAt(LocalDateTime.now());
 
-        // Extraer info de la tarjeta si existe
         if (paymentIntent.getLatestChargeObject() != null) {
             Charge charge = paymentIntent.getLatestChargeObject();
             payment.setStripeChargeId(charge.getId());
@@ -232,7 +215,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         paymentRepository.save(payment);
 
-        // Actualizar la reserva
         ReservationEntity reservation = payment.getReservation();
         reservation.setBookingStatus(BookingStatus.PAID);
         reservationService.updateReservation(reservation);
@@ -240,9 +222,6 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("✅ Payment and reservation updated successfully");
     }
 
-    /**
-     * Maneja el evento de pago fallido
-     */
     private void handlePaymentIntentFailed(Event event) {
         PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer()
                 .getObject()
@@ -255,7 +234,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new PaymentNotFoundException(paymentIntent.getId()));
 
         if (payment.getStatus() == PaymentStatus.FAILED) {
-            return; // Ya procesado
+            return;
         }
 
         payment.setStatus(PaymentStatus.FAILED);
@@ -269,17 +248,13 @@ public class PaymentServiceImpl implements PaymentService {
 
         paymentRepository.save(payment);
 
-        // Actualizar reserva
         ReservationEntity reservation = payment.getReservation();
         reservation.setBookingStatus(BookingStatus.PAYMENT_FAILED);
         reservationService.updateReservation(reservation);
 
-        log.info("❌ Payment marked as failed");
+        log.info("Payment marked as failed");
     }
 
-    /**
-     * Maneja cuando se requiere acción adicional (3D Secure)
-     */
     private void handlePaymentIntentRequiresAction(Event event) {
         PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer()
                 .getObject()
@@ -296,9 +271,6 @@ public class PaymentServiceImpl implements PaymentService {
         paymentRepository.save(payment);
     }
 
-    /**
-     * Maneja reembolsos
-     */
     private void handleChargeRefunded(Event event) {
         Charge charge = (Charge) event.getDataObjectDeserializer()
                 .getObject()
@@ -313,15 +285,11 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setStatus(PaymentStatus.REFUNDED);
         paymentRepository.save(payment);
 
-        // Actualizar reserva
         ReservationEntity reservation = payment.getReservation();
         reservation.setBookingStatus(BookingStatus.REFUNDED);
         reservationService.updateReservation(reservation);
     }
 
-    /**
-     * Consulta el estado de un pago
-     */
     @Override
     public PaymentResponse getPaymentStatus(Long paymentId) {
         log.info("Getting payment status for: {}", paymentId);

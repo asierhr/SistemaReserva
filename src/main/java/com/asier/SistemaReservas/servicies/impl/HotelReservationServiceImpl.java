@@ -5,6 +5,7 @@ import com.asier.SistemaReservas.domain.dto.RoomDTO;
 import com.asier.SistemaReservas.domain.entities.HotelReservationEntity;
 import com.asier.SistemaReservas.domain.entities.RoomEntity;
 import com.asier.SistemaReservas.domain.entities.RoomReservationEntity;
+import com.asier.SistemaReservas.domain.entities.UserEntity;
 import com.asier.SistemaReservas.domain.enums.BookingStatus;
 import com.asier.SistemaReservas.mapper.HotelReservationMapper;
 import com.asier.SistemaReservas.repositories.HotelReservationRepository;
@@ -30,7 +31,7 @@ public class HotelReservationServiceImpl implements HotelReservationService {
     private final HotelReservationMapper hotelReservationMapper;
     private final HotelService hotelService;
     private final RoomService roomService;
-    private final UserService user;
+    private final UserService userService;
 
     private BigDecimal validateRooms(Long id, List<RoomEntity> rooms){
         if(rooms.isEmpty())  throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No rooms provided");
@@ -52,7 +53,7 @@ public class HotelReservationServiceImpl implements HotelReservationService {
                 .reservationDate(LocalDateTime.now())
                 .totalPrice(validateRooms(id, rooms))
                 .bookingStatus(BookingStatus.PENDING_PAYMENT)
-                .user(user.getUserEntity())
+                .user(userService.getUserEntity())
                 .hotel(hotelService.getHotelEntity(id))
                 .checkIn(checkIn)
                 .checkOut(checkOut)
@@ -74,5 +75,11 @@ public class HotelReservationServiceImpl implements HotelReservationService {
 
         HotelReservationEntity savedReservation = hotelReservationRepository.save(hotel);
         return hotelReservationMapper.toDTO(savedReservation);
+    }
+
+    @Override
+    public List<HotelReservationDTO> getUserReservations() {
+        UserEntity user = userService.getUserEntity();
+        return hotelReservationMapper.toDTOList(hotelReservationRepository.findAllByUserId(user.getId()));
     }
 }

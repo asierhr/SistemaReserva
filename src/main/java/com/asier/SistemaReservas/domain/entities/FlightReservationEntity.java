@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -21,5 +22,5 @@ public class FlightReservationEntity extends ReservationEntity{
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<SeatEntity> seat;
 
-
+    private LocalDateTime expiresAt;
 }
