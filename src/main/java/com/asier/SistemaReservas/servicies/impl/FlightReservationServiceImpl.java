@@ -1,12 +1,10 @@
 package com.asier.SistemaReservas.servicies.impl;
 
 import com.asier.SistemaReservas.domain.dto.FlightReservationDTO;
-import com.asier.SistemaReservas.domain.dto.FlightSummaryDTO;
-import com.asier.SistemaReservas.domain.dto.SeatDTO;
 import com.asier.SistemaReservas.domain.entities.FlightReservationEntity;
 import com.asier.SistemaReservas.domain.entities.SeatEntity;
 import com.asier.SistemaReservas.domain.enums.BookingStatus;
-import com.asier.SistemaReservas.domain.records.FlightSearch;
+import com.asier.SistemaReservas.domain.records.FlightReservationRequest;
 import com.asier.SistemaReservas.mapper.FlightReservationMapper;
 import com.asier.SistemaReservas.repositories.FlightReservationRepository;
 import com.asier.SistemaReservas.servicies.FlightReservationService;
@@ -53,16 +51,18 @@ public class FlightReservationServiceImpl implements FlightReservationService {
 
     @Override
     @Transactional
-    public FlightReservationDTO createFlightReservation(Long id, FlightSearch flightSearch) {
+    public FlightReservationDTO createFlightReservation(Long id, FlightReservationRequest request) {
         if(!flightService.existsById(id))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flight not found");
-        List<SeatEntity> availableSeats = seatService.getAvailableSeats(id);
-        if (availableSeats.size() < flightSearch.passengers()) {
+        List<SeatEntity> availableSeats = seatService.getAvailableSeats(id).stream()
+                .filter(seat -> seat.getSeatClass() == request.seatClass())
+                .toList();;
+        if (availableSeats.size() < request.flightSearch().passengers()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     String.format("Not enough seats available. Required: %d, Available: %d",
-                            flightSearch.passengers(), availableSeats.size()));
+                            request.flightSearch().passengers(), availableSeats.size()));
         }
-        List<SeatEntity> seats = availableSeats.subList(0, flightSearch.passengers());
+        List<SeatEntity> seats = availableSeats.subList(0, request.flightSearch().passengers());
         FlightReservationEntity flightReservationEntity = FlightReservationEntity.builder()
                 .reservationDate(LocalDateTime.now())
                 .bookingStatus(BookingStatus.PENDING_PAYMENT)
