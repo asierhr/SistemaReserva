@@ -22,11 +22,14 @@ public class FlightEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String origin;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "origin_id", nullable = false)
+    private AirportEntity origin;
 
-    @Column(nullable = false)
-    private String destination;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "destination_id", nullable = false)
+    private AirportEntity destination;
+
 
     @Column(nullable = false)
     private String airline;

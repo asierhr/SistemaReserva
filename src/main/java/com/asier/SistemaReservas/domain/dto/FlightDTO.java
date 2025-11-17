@@ -15,8 +15,8 @@ import java.util.List;
 @AllArgsConstructor
 public class FlightDTO {
     private Long id;
-    private String origin;
-    private String destination;
+    private AirportDTO origin;
+    private AirportDTO destination;
     private String airline;
     private LocalDate flightDay;
     private LocalTime departureTime;

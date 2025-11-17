@@ -5,6 +5,7 @@ import com.asier.SistemaReservas.domain.entities.SeatEntity;
 import com.asier.SistemaReservas.domain.enums.SeatClass;
 import com.asier.SistemaReservas.mapper.SeatMapper;
 import com.asier.SistemaReservas.repositories.SeatRepository;
+import com.asier.SistemaReservas.servicies.FlightSeatHelper;
 import com.asier.SistemaReservas.servicies.FlightService;
 import com.asier.SistemaReservas.servicies.SeatService;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 public class SeatServiceImpl implements SeatService {
     private final SeatRepository seatRepository;
     private final SeatMapper seatMapper;
-    private final FlightService flightService;
+    private final FlightSeatHelper flightSeatHelper;
 
     @Override
     public List<SeatDTO> createSeats(List<SeatDTO> seats) {
@@ -31,7 +32,7 @@ public class SeatServiceImpl implements SeatService {
 
     @Override
     public Map<SeatClass, List<SeatDTO>> getSeatsFromFlight(Long id) {
-        if(!flightService.existsById(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flight not found");
+        if(!flightSeatHelper.flightExists(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flight not found");
         List<SeatEntity> seats = seatRepository.findAllByFlightId(id);
         List<SeatDTO> seatDTOs = seatMapper.toDTOList(seats);
         return seatDTOs.stream().collect(Collectors.groupingBy(SeatDTO::getSeatClass));

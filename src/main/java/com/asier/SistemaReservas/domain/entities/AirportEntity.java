@@ -1,0 +1,31 @@
+package com.asier.SistemaReservas.domain.entities;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+@Table(name = "airports")
+public class AirportEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Embedded
+    private Location location;
+
+    @Column(unique = true)
+    private String airportName;
+
+    @OneToMany(mappedBy = "airport", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    List<AirportEmployeeInfoEntity> employees = new ArrayList<>();
+}

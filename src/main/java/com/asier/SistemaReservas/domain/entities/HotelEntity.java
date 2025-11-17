@@ -24,7 +24,7 @@ public class HotelEntity {
     @Column(nullable = false)
     private String hotelName;
 
-    @Column(nullable = false)
+    @Embedded
     private Location location;
 
     private Double rating;
@@ -38,10 +38,15 @@ public class HotelEntity {
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CommentEntity> comments = new ArrayList<>();
 
-    @ManyToMany(mappedBy = "hotels")
+    @ManyToMany(mappedBy = "hotels", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<HotelHistoryEntity> hotelHistories = new ArrayList<>();
 
-    @ManyToMany(mappedBy = "hotels")
+    @ManyToMany(mappedBy = "hotels", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<HotelFavouriteEntity> hotelFavourites = new ArrayList<>();
+
+    @OneToMany(mappedBy = "hotel" , cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<HotelEmployeeInfoEntity> hotelEmployees = new ArrayList<>();
+
+
 }
 
