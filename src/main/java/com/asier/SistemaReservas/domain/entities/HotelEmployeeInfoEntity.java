@@ -20,7 +20,7 @@ public class HotelEmployeeInfoEntity {
     @OneToOne
     private UserEntity user;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "hotelId")
     private HotelEntity hotel;
 }

@@ -17,4 +17,6 @@ public interface FlightReservationRepository extends JpaRepository<FlightReserva
           AND fr.expiresAt < :now
     """)
     List<FlightReservationEntity> findExpiredPendingReservations(@Param("now") LocalDateTime now);
+
+    List<FlightReservationEntity> findAllByUserId(Long id);
 }

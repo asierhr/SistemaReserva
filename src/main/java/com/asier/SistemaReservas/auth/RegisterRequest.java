@@ -6,6 +6,8 @@ public record RegisterRequest(
         String mail,
         String name,
         String password,
-        UserRole role
+        UserRole role,
+        Long hotelId,
+        Long airportId
 ) {
 }

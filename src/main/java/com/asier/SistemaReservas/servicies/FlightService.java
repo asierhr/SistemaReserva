@@ -7,7 +7,6 @@ import com.asier.SistemaReservas.domain.entities.FlightEntity;
 import com.asier.SistemaReservas.domain.records.FlightSearch;
 
 import java.util.List;
-import java.util.Map;
 
 public interface FlightService {
     FlightDTO createFlight(FlightDTO flight);
@@ -18,4 +17,5 @@ public interface FlightService {
     List<FlightPairDTO> getFlightsBySearch(FlightSearch flightSearch);
     List<String> getAllOrigins();
     List<String> getAllDestinations();
+    List<FlightDTO> transformListEntity(List<FlightEntity> flight);
 }

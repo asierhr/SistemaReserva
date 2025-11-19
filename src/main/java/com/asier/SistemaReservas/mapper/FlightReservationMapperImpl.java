@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -37,5 +39,23 @@ public class FlightReservationMapperImpl implements FlightReservationMapper{
                 .flight(flightMapper.toEntity(flightReservationDTO.getFlight()))
                 .seat(seatMapper.toEntityList(flightReservationDTO.getSeats()))
                 .build();
+    }
+
+    @Override
+    public List<FlightReservationDTO> toDTOList(List<FlightReservationEntity> flightReservationEntities) {
+        List<FlightReservationDTO> reservationDTOS = new ArrayList<>();
+        for(FlightReservationEntity flightReservationEntity: flightReservationEntities){
+            FlightReservationDTO flightReservationDTO =FlightReservationDTO.builder()
+                    .id(flightReservationEntity.getId())
+                    .reservationDate(flightReservationEntity.getReservationDate())
+                    .bookingStatus(flightReservationEntity.getBookingStatus())
+                    .totalPrice(flightReservationEntity.getTotalPrice())
+                    .user(userMapper.toDTO(flightReservationEntity.getUser()))
+                    .flight(flightMapper.toSummaryDTO(flightReservationEntity.getFlight()))
+                    .seats(seatMapper.toDTOList(flightReservationEntity.getSeat()))
+                    .build();
+            reservationDTOS.add(flightReservationDTO);
+        }
+        return reservationDTOS;
     }
 }

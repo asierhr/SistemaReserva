@@ -1,5 +1,5 @@
 package com.asier.SistemaReservas.domain.enums;
 
 public enum UserRole {
-    ADMIN,USER,STAFF,OWNER
+    ADMIN,USER,HOTEL_WORKER,OWNER,AIRPORT_WORKER
 }

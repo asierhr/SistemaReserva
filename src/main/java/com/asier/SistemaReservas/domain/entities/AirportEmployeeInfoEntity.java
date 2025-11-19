@@ -20,7 +20,7 @@ public class AirportEmployeeInfoEntity {
     @OneToOne
     private UserEntity user;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "airportId")
     private AirportEntity airport;
 }

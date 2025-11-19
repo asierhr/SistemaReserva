@@ -1,10 +1,7 @@
 package com.asier.SistemaReservas.domain.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -24,10 +21,12 @@ public class FlightEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "origin_id", nullable = false)
+    @ToString.Exclude
     private AirportEntity origin;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "destination_id", nullable = false)
+    @ToString.Exclude
     private AirportEntity destination;
 
 

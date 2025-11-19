@@ -5,8 +5,7 @@ import com.asier.SistemaReservas.domain.entities.SeatEntity;
 import com.asier.SistemaReservas.domain.enums.SeatClass;
 import com.asier.SistemaReservas.mapper.SeatMapper;
 import com.asier.SistemaReservas.repositories.SeatRepository;
-import com.asier.SistemaReservas.servicies.FlightSeatHelper;
-import com.asier.SistemaReservas.servicies.FlightService;
+import com.asier.SistemaReservas.servicies.FlightHelper;
 import com.asier.SistemaReservas.servicies.SeatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
 public class SeatServiceImpl implements SeatService {
     private final SeatRepository seatRepository;
     private final SeatMapper seatMapper;
-    private final FlightSeatHelper flightSeatHelper;
+    private final FlightHelper flightSeatHelper;
 
     @Override
     public List<SeatDTO> createSeats(List<SeatDTO> seats) {

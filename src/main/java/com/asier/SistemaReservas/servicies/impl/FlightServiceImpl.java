@@ -9,9 +9,8 @@ import com.asier.SistemaReservas.domain.records.FlightSearch;
 import com.asier.SistemaReservas.mapper.FlightMapper;
 import com.asier.SistemaReservas.repositories.FlightRepository;
 import com.asier.SistemaReservas.servicies.AirportService;
-import com.asier.SistemaReservas.servicies.FlightSeatHelper;
+import com.asier.SistemaReservas.servicies.FlightHelper;
 import com.asier.SistemaReservas.servicies.FlightService;
-import com.asier.SistemaReservas.servicies.SeatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,8 +25,7 @@ import java.util.List;
 public class FlightServiceImpl implements FlightService {
     private final FlightRepository flightRepository;
     private final FlightMapper flightMapper;
-    private final FlightSeatHelper flightSeatHelper;
-    private final AirportService airportService;
+    private final FlightHelper flightHelper;
 
     @Override
     public FlightDTO createFlight(FlightDTO flight) {
@@ -35,8 +33,14 @@ public class FlightServiceImpl implements FlightService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Flight already exists");
         }
         FlightEntity flightEntity = flightMapper.toEntity(flight);
-        flightEntity.setOrigin(airportService.getAirport(flight.getOrigin().getId()));
-        flightEntity.setDestination(airportService.getAirport(flight.getDestination().getId()));
+        AirportEntity origin = flightHelper.getAirport(flight.getOrigin().getId());
+        AirportEntity destination = flightHelper.getAirport(flight.getDestination().getId());
+
+        flightEntity.setOrigin(origin);
+        flightEntity.setDestination(destination);
+
+        origin.getDepartingFlights().add(flightEntity);
+        destination.getArrivingFlights().add(flightEntity);
         flightEntity.getSeats().forEach(seat -> seat.setFlight(flightEntity));
         FlightEntity savedFlight = flightRepository.save(flightEntity);
         return flightMapper.toDTO(savedFlight);
@@ -71,8 +75,8 @@ public class FlightServiceImpl implements FlightService {
     @Override
     public List<FlightPairDTO> getFlightsBySearch(FlightSearch flightSearch) {
 
-        AirportEntity airportOrigin = airportService.getAirportByLocationCity(flightSearch.origin());
-        AirportEntity airportDestination = airportService.getAirportByLocationCity(flightSearch.destination());
+        AirportEntity airportOrigin = flightHelper.getAirportByLocationCity(flightSearch.origin());
+        AirportEntity airportDestination = flightHelper.getAirportByLocationCity(flightSearch.destination());
 
         List<FlightEntity> outboundFlights = flightRepository.getFlightsByFlightSearch(
                 airportOrigin.getId(),
@@ -87,10 +91,10 @@ public class FlightServiceImpl implements FlightService {
         );
 
         List<FlightSummaryDTO> outboundDTOs = flightMapper.toSummaryDTOList(outboundFlights).stream()
-                .filter(f ->flightSeatHelper.getAvailableSeatsForFlight(f.getId()).size() >= flightSearch.passengers())
+                .filter(f -> flightHelper.getAvailableSeatsForFlight(f.getId()).size() >= flightSearch.passengers())
                 .toList();
         List<FlightSummaryDTO> returnDTOs = flightMapper.toSummaryDTOList(returnFlights).stream()
-                .filter(f -> flightSeatHelper.getAvailableSeatsForFlight(f.getId()).size() >= flightSearch.passengers())
+                .filter(f -> flightHelper.getAvailableSeatsForFlight(f.getId()).size() >= flightSearch.passengers())
                 .toList();
 
         List<FlightPairDTO> flightPairs = new ArrayList<>();
@@ -114,5 +118,10 @@ public class FlightServiceImpl implements FlightService {
     @Override
     public List<String> getAllDestinations() {
         return flightRepository.findAllDestinations();
+    }
+
+    @Override
+    public List<FlightDTO> transformListEntity(List<FlightEntity> flight) {
+        return flightMapper.toDTOList(flight);
     }
 }

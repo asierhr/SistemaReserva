@@ -3,6 +3,7 @@ package com.asier.SistemaReservas.servicies.impl;
 import com.asier.SistemaReservas.domain.dto.FlightReservationDTO;
 import com.asier.SistemaReservas.domain.entities.FlightReservationEntity;
 import com.asier.SistemaReservas.domain.entities.SeatEntity;
+import com.asier.SistemaReservas.domain.entities.UserEntity;
 import com.asier.SistemaReservas.domain.enums.BookingStatus;
 import com.asier.SistemaReservas.domain.records.FlightReservationRequest;
 import com.asier.SistemaReservas.mapper.FlightReservationMapper;
@@ -88,5 +89,11 @@ public class FlightReservationServiceImpl implements FlightReservationService {
     @Override
     public void updateFlightsReservations(List<FlightReservationEntity> flightReservations) {
         flightReservationRepository.saveAll(flightReservations);
+    }
+
+    @Override
+    public List<FlightReservationDTO> getAllFlightReservations() {
+        UserEntity user = userService.getUserEntity();
+        return flightReservationMapper.toDTOList(flightReservationRepository.findAllByUserId(user.getId()));
     }
 }

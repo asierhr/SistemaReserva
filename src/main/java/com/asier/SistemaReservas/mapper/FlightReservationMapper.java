@@ -5,7 +5,10 @@ import com.asier.SistemaReservas.domain.dto.FlightSummaryDTO;
 import com.asier.SistemaReservas.domain.entities.FlightReservationEntity;
 import org.mapstruct.Mapper;
 
+import java.util.List;
+
 public interface FlightReservationMapper {
     FlightReservationDTO toDTO(FlightReservationEntity flightReservationEntity);
     FlightReservationEntity toEntity(FlightReservationDTO flightReservationDTO);
+    List<FlightReservationDTO> toDTOList(List<FlightReservationEntity> flightReservationEntities);
 }

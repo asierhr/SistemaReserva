@@ -28,4 +28,10 @@ public class AirportEntity {
 
     @OneToMany(mappedBy = "airport", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<AirportEmployeeInfoEntity> employees = new ArrayList<>();
+
+    @OneToMany(mappedBy = "origin", cascade = CascadeType.ALL)
+    private List<FlightEntity> departingFlights = new ArrayList<>();
+
+    @OneToMany(mappedBy = "destination", cascade = CascadeType.ALL)
+    private List<FlightEntity> arrivingFlights = new ArrayList<>();
 }

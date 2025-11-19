@@ -38,5 +38,6 @@ public class ExpiredReservationCleanupJob {
             }
         }
         flightReservationService.updateFlightsReservations(expiredReservations);
+        log.info("Expired reservations updated in memory, transaction should persist changes on commit.");
     }
 }

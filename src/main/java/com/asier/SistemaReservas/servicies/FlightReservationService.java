@@ -13,4 +13,5 @@ public interface FlightReservationService {
     FlightReservationDTO createFlightReservation(Long id, FlightReservationRequest request);
     List<FlightReservationEntity> getFlightReservationsExpired();
     void updateFlightsReservations(List<FlightReservationEntity> flightReservations);
+    List<FlightReservationDTO> getAllFlightReservations();
 }

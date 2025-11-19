@@ -3,13 +3,13 @@ package com.asier.SistemaReservas.servicies.impl;
 import com.asier.SistemaReservas.auth.LoginRequest;
 import com.asier.SistemaReservas.auth.RegisterRequest;
 import com.asier.SistemaReservas.auth.TokenResponse;
+import com.asier.SistemaReservas.domain.entities.AirportEmployeeInfoEntity;
+import com.asier.SistemaReservas.domain.entities.HotelEmployeeInfoEntity;
 import com.asier.SistemaReservas.domain.entities.Token;
 import com.asier.SistemaReservas.domain.entities.UserEntity;
 import com.asier.SistemaReservas.domain.enums.TokenType;
 import com.asier.SistemaReservas.repositories.TokenRepository;
-import com.asier.SistemaReservas.servicies.AuthService;
-import com.asier.SistemaReservas.servicies.JwtService;
-import com.asier.SistemaReservas.servicies.UserService;
+import com.asier.SistemaReservas.servicies.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +27,10 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final AirportEmployeeInfoService airportEmployeeInfoService;
+    private final HotelEmployeeInfoService hotelEmployeeInfoService;
+    private final AirportService airportService;
+    private final HotelService hotelService;
 
     @Override
     public TokenResponse register(RegisterRequest register) {
@@ -39,10 +43,38 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         UserEntity savedUser = userService.createUser(user);
+
+        createWorkerByRole(savedUser, register);
+
         String jwtToken = jwtService.generateToken(savedUser);
         String refreshToken = jwtService.generateRefreshToken(savedUser);
         saveUserToken(user, jwtToken);
         return new TokenResponse(jwtToken, refreshToken);
+    }
+
+    private void createWorkerByRole(UserEntity user, RegisterRequest request){
+        switch(user.getUserRole()){
+            case HOTEL_WORKER:
+                if(request.hotelId() != null){
+                    HotelEmployeeInfoEntity hotelEmployeeInfo = HotelEmployeeInfoEntity.builder()
+                            .user(user)
+                            .hotel(hotelService.getHotelEntity(request.hotelId()))
+                            .build();
+                    hotelEmployeeInfoService.createHotelEmployee(hotelEmployeeInfo);
+                }
+                break;
+            case AIRPORT_WORKER:
+                if(request.airportId() != null){
+                    AirportEmployeeInfoEntity airportEmployeeInfo = AirportEmployeeInfoEntity.builder()
+                            .user(user)
+                            .airport(airportService.getAirport(request.airportId()))
+                            .build();
+                    airportEmployeeInfoService.createAirportEmployee(airportEmployeeInfo);
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     @Override
