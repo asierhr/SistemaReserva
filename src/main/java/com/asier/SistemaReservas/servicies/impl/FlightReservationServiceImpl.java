@@ -6,14 +6,17 @@ import com.asier.SistemaReservas.domain.entities.SeatEntity;
 import com.asier.SistemaReservas.domain.entities.UserEntity;
 import com.asier.SistemaReservas.domain.enums.BookingStatus;
 import com.asier.SistemaReservas.domain.records.FlightReservationRequest;
+import com.asier.SistemaReservas.kafkaEvent.ReservationEventProducer;
 import com.asier.SistemaReservas.mapper.FlightReservationMapper;
 import com.asier.SistemaReservas.repositories.FlightReservationRepository;
 import com.asier.SistemaReservas.servicies.FlightReservationService;
 import com.asier.SistemaReservas.servicies.FlightService;
 import com.asier.SistemaReservas.servicies.SeatService;
 import com.asier.SistemaReservas.servicies.UserService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class FlightReservationServiceImpl implements FlightReservationService {
     private final FlightReservationRepository flightReservationRepository;
@@ -30,6 +34,7 @@ public class FlightReservationServiceImpl implements FlightReservationService {
     private final SeatService seatService;
     private final FlightReservationMapper flightReservationMapper;
     private final UserService userService;
+    private final ReservationEventProducer reservationEventProducer;
 
     private BigDecimal validateSeatsAndCost(List<SeatEntity> seats, Long flightId) {
         if (seats.isEmpty()) {
@@ -78,6 +83,15 @@ public class FlightReservationServiceImpl implements FlightReservationService {
             seat.setAvailable(false);
         }
         FlightReservationEntity savedFlightReservation = flightReservationRepository.save(flightReservationEntity);
+
+        try {
+            reservationEventProducer.sendReservationCreatedEvent(savedFlightReservation);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to send reservation event", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Reservation created but notification failed");
+        }
+
         return flightReservationMapper.toDTO(savedFlightReservation);
     }
 

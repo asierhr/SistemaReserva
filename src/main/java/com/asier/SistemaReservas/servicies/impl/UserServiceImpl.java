@@ -45,4 +45,10 @@ public class UserServiceImpl implements UserService {
         String mail = authentication.getName();
         return userRepository.findByMail(mail).orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
+
+    @Override
+    public UserEntity getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 }

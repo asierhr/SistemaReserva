@@ -10,4 +10,5 @@ public interface UserService {
     UserEntity createUser(UserEntity user);
     UserDTO getUser();
     UserEntity getUserEntity();
+    UserEntity getUserById(Long id);
 }
