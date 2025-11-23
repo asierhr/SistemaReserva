@@ -1,8 +1,10 @@
 package com.asier.SistemaReservas.controller;
 
+import com.asier.SistemaReservas.domain.entities.ReservationEntity;
 import com.asier.SistemaReservas.domain.records.CreatePaymentRequest;
 import com.asier.SistemaReservas.domain.records.PaymentResponse;
 import com.asier.SistemaReservas.servicies.PaymentService;
+import com.asier.SistemaReservas.servicies.ReservationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +18,11 @@ import java.math.BigDecimal;
 @Slf4j
 public class PaymentController {
     private final PaymentService paymentService;
+    private final ReservationService reservationService;
 
-    @PostMapping
-    public ResponseEntity<PaymentResponse> createPayment(@RequestBody CreatePaymentRequest request) {
+    @PostMapping("/{reservationId}")
+    public ResponseEntity<PaymentResponse> createPayment(@PathVariable Long reservationId, @RequestBody CreatePaymentRequest request) {
+        ReservationEntity reservation = reservationService.getReservation(reservationId);
         log.info("Received create payment request: {}", request);
         PaymentResponse response = paymentService.createPayment(request);
         return ResponseEntity.ok(response);

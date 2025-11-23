@@ -38,6 +38,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     private String buildConfirmationMessage(UserEntity user, ReservationEntity reservation){
+        String checkoutLink = "http://localhost:8080/payments/" + reservation.getId();
         return String.format("""
                 Hello %s
                 
@@ -47,12 +48,16 @@ public class EmailServiceImpl implements EmailService {
                 Date: %s
                 Total = $%.2f
                 
+                Complete your payment here:
+                %s
+                
                 Thank you for your booking
                 """,
                 user.getName(),
                 reservation.getId(),
                 reservation.getReservationDate(),
-                reservation.getTotalPrice()
+                reservation.getTotalPrice(),
+                checkoutLink
         );
     }
 }

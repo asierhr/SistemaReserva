@@ -13,4 +13,5 @@ public interface SeatService {
     List<SeatEntity> getSeatFromIds(List<Long> seatIds);
     void updateListSeatsAvailability(List<SeatEntity> seats);
     List<SeatEntity> getAvailableSeats(Long id);
+    SeatEntity getSeatFromId(Long id);
 }

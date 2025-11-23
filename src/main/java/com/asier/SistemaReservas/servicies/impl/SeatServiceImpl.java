@@ -51,4 +51,9 @@ public class SeatServiceImpl implements SeatService {
     public List<SeatEntity> getAvailableSeats(Long id) {
         return seatRepository.findAllByFlightIdAndAvailableTrue(id);
     }
+
+    @Override
+    public SeatEntity getSeatFromId(Long id) {
+        return seatRepository.findById(id).orElseThrow();
+    }
 }

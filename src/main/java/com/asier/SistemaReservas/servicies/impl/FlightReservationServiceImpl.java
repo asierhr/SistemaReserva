@@ -9,10 +9,7 @@ import com.asier.SistemaReservas.domain.records.FlightReservationRequest;
 import com.asier.SistemaReservas.kafkaEvent.ReservationEventProducer;
 import com.asier.SistemaReservas.mapper.FlightReservationMapper;
 import com.asier.SistemaReservas.repositories.FlightReservationRepository;
-import com.asier.SistemaReservas.servicies.FlightReservationService;
-import com.asier.SistemaReservas.servicies.FlightService;
-import com.asier.SistemaReservas.servicies.SeatService;
-import com.asier.SistemaReservas.servicies.UserService;
+import com.asier.SistemaReservas.servicies.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -35,6 +33,9 @@ public class FlightReservationServiceImpl implements FlightReservationService {
     private final FlightReservationMapper flightReservationMapper;
     private final UserService userService;
     private final ReservationEventProducer reservationEventProducer;
+    private final DistributedLockService distributedLockService;
+
+    private static final int MAX_RETRIES = 3;
 
     private BigDecimal validateSeatsAndCost(List<SeatEntity> seats, Long flightId) {
         if (seats.isEmpty()) {
@@ -55,44 +56,85 @@ public class FlightReservationServiceImpl implements FlightReservationService {
         return totalPrice;
     }
 
-    @Override
-    @Transactional
+    @Override  // ← Quitar @Transactional de aquí
     public FlightReservationDTO createFlightReservation(Long id, FlightReservationRequest request) {
-        if(!flightService.existsById(id))
+        if (!flightService.existsById(id))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flight not found");
-        List<SeatEntity> availableSeats = seatService.getAvailableSeats(id).stream()
-                .filter(seat -> seat.getSeatClass() == request.seatClass())
-                .toList();;
-        if (availableSeats.size() < request.flightSearch().passengers()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    String.format("Not enough seats available. Required: %d, Available: %d",
-                            request.flightSearch().passengers(), availableSeats.size()));
+
+        UserEntity currentUser = userService.getUserEntity();
+
+        for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            List<SeatEntity> availableSeats = seatService.getAvailableSeats(id).stream()
+                    .filter(seat -> seat.getSeatClass() == request.seatClass())
+                    .sorted(Comparator.comparing(SeatEntity::getId))
+                    .limit(request.flightSearch().passengers())
+                    .toList();
+
+            if (availableSeats.size() < request.flightSearch().passengers()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Not enough seats available");
+            }
+
+            List<String> seatLockKeys = availableSeats.stream()
+                    .map(seat -> "seat:" + seat.getId())
+                    .toList();
+
+            try {
+                return distributedLockService.executeWithMultiLock(seatLockKeys, () -> {
+                    return processReservationInTransaction(id, availableSeats, request, currentUser);
+                });
+            } catch (ResponseStatusException e) {
+                if (e.getStatusCode() == HttpStatus.CONFLICT && attempt < MAX_RETRIES - 1) {
+                    log.warn("Attempt {} failed, retrying...", attempt + 1);
+                    continue;
+                }
+                throw e;
+            }
         }
-        List<SeatEntity> seats = availableSeats.subList(0, request.flightSearch().passengers());
-        FlightReservationEntity flightReservationEntity = FlightReservationEntity.builder()
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Could not complete reservation");
+    }
+
+    @Transactional
+    private FlightReservationDTO processReservationInTransaction(
+            Long flightId,
+            List<SeatEntity> seats,
+            FlightReservationRequest request,
+            UserEntity user) {
+
+        List<SeatEntity> freshSeats = seats.stream()
+                .map(seat -> seatService.getSeatFromId(seat.getId()))
+                .toList();
+
+        for (SeatEntity seat : freshSeats) {
+            if (!seat.isAvailable()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Seat " + seat.getSeatNumber() + " was just taken");
+            }
+        }
+
+        FlightReservationEntity reservation = FlightReservationEntity.builder()
                 .reservationDate(LocalDateTime.now())
                 .bookingStatus(BookingStatus.PENDING_PAYMENT)
-                .totalPrice(validateSeatsAndCost(seats, id))
-                .user(userService.getUserEntity())
-                .flight(flightService.getFlightEntity(id))
-                .seat(seats)
+                .totalPrice(validateSeatsAndCost(freshSeats, flightId))
+                .user(user)
+                .flight(flightService.getFlightEntity(flightId))
+                .seat(freshSeats)
                 .expiresAt(LocalDateTime.now().plusMinutes(15))
                 .build();
-        for(SeatEntity seat: flightReservationEntity.getSeat()){
-            seat.setReservation(flightReservationEntity);
+
+        for (SeatEntity seat : reservation.getSeat()) {
+            seat.setReservation(reservation);
             seat.setAvailable(false);
         }
-        FlightReservationEntity savedFlightReservation = flightReservationRepository.save(flightReservationEntity);
+
+        FlightReservationEntity saved = flightReservationRepository.save(reservation);
 
         try {
-            reservationEventProducer.sendReservationCreatedEvent(savedFlightReservation);
+            reservationEventProducer.sendReservationCreatedEvent(saved);
         } catch (JsonProcessingException e) {
             log.error("Failed to send reservation event", e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Reservation created but notification failed");
         }
 
-        return flightReservationMapper.toDTO(savedFlightReservation);
+        return flightReservationMapper.toDTO(saved);
     }
 
     @Override
