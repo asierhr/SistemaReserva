@@ -1,0 +1,19 @@
+package com.asier.SistemaReservas.seats.mapper;
+
+import com.asier.SistemaReservas.seats.domain.DTO.SeatDTO;
+import com.asier.SistemaReservas.seats.domain.entity.SeatEntity;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+import java.util.List;
+
+@Mapper(componentModel = "spring")
+public interface SeatMapper {
+
+    @Mapping(source = "seatClass", target = "seatClass")
+    @Mapping(source = "seatType", target = "seatType")
+    @Mapping(source = "flight.id", target = "flightId")
+    SeatDTO toDTO(SeatEntity seat);
+    List<SeatDTO> toDTOList(List<SeatEntity> seats);
+    List<SeatEntity> toEntityList(List<SeatDTO> seats);
+}
