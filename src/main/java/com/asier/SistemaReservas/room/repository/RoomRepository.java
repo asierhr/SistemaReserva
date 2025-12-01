@@ -79,4 +79,27 @@ public interface RoomRepository extends JpaRepository<RoomEntity, Long> {
                                         @Param("roomTypes") List<RoomType> roomTypes,
                                         @Param("checkIn") LocalDate checkIn,
                                         @Param("checkOut") LocalDate checkOut);
+
+
+
+    @Query("""
+        SELECT r FROM RoomEntity r        
+        WHERE r.hotel.id = :hotelId
+        AND r.type = :type
+        AND r.available = true    
+        AND NOT EXISTS (
+              SELECT 1
+              FROM RoomReservationEntity rr
+              JOIN rr.reservation hr
+              WHERE rr.room = r
+                AND hr.bookingStatus NOT IN ('CANCELLED', 'REFUNDED')
+                AND hr.checkIn < :checkOut
+                AND hr.checkOut > :checkIn
+          )
+            
+    """)
+    List<RoomEntity> findAvailableRoomsByTypes(@Param("hotelId") Long id,
+                                               @Param("type") RoomType type,
+                                               @Param("checkIn") LocalDate checkIn,
+                                               @Param("checkOut") LocalDate checkOut);
 }

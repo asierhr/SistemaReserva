@@ -33,7 +33,7 @@ public class DistributedLockServiceImpl implements DistributedLockService {
             acquired = multilock.tryLock(LOCK_WAIT_TIME, LOCK_LEASE_TIME, TimeUnit.SECONDS);
             if (!acquired) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Some seats are being reserved by another user");
+                        "Another user is using this resource");
             }
             return action.get();
         } catch (InterruptedException e) {

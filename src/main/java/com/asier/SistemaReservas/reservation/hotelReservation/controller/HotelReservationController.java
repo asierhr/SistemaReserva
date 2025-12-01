@@ -15,7 +15,7 @@ public class HotelReservationController {
 
     @PostMapping(path = "/hotels/{id}/rooms/reservation")
     public HotelReservationDTO createReservation(@PathVariable Long id, @RequestBody ReservationHotelRequest request){
-        return hotelReservationService.createReservation(id, request.roomIds(), request.checkIn(), request.checkOut());
+        return hotelReservationService.createReservation(id, request);
     }
 
     @GetMapping(path = "/users/hotels/reservations")
