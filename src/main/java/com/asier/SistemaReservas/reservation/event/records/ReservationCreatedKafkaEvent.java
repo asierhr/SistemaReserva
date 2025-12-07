@@ -9,7 +9,6 @@ public record ReservationCreatedKafkaEvent(
         Long reservationId,
         Long userId,
         BigDecimal totalPrice,
-        String qrCodeBase64,
         LocalDateTime reservationDate,
         BookingStatus bookingStatus
 ) {}

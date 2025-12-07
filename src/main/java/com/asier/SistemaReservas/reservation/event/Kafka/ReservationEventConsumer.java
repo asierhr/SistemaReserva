@@ -5,10 +5,12 @@ import com.asier.SistemaReservas.notification.service.NotificationService;
 import com.asier.SistemaReservas.notification.domain.enums.NotificationStatus;
 import com.asier.SistemaReservas.notification.domain.enums.NotificationType;
 import com.asier.SistemaReservas.notification.domain.entity.NotificationEntity;
+import com.asier.SistemaReservas.payment.domain.records.CreatePaymentRequest;
+import com.asier.SistemaReservas.payment.domain.records.PaymentResponse;
+import com.asier.SistemaReservas.payment.service.PaymentService;
 import com.asier.SistemaReservas.reservation.event.records.ReservationCreatedKafkaEvent;
 import com.asier.SistemaReservas.reservation.service.ReservationService;
 import com.asier.SistemaReservas.reservation.domain.entity.ReservationEntity;
-import com.asier.SistemaReservas.reservation.flightReservation.service.FlightReservationService;
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import com.asier.SistemaReservas.user.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,6 +22,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -29,7 +33,7 @@ public class ReservationEventConsumer {
     private final ReservationService reservationService;
     private final NotificationService notificationService;
     private final EmailService emailService;
-    private final FlightReservationService flightReservationService;
+    private final PaymentService paymentService;
 
     @KafkaListener(topics = "${topics.booking-created}", groupId = "notifications-group")
     public void listen(String message, Acknowledgment ack) throws JsonProcessingException {
@@ -57,6 +61,22 @@ public class ReservationEventConsumer {
                 .status(NotificationStatus.UNREAD)
                 .build();
         notificationService.createNotification(notification);
-        emailService.createEmailOutbox(user, reservation, notification, event.qrCodeBase64());
+
+        Map<String, String> metadata = Map.of(
+                "reservationId", reservation.getId().toString(),
+                "userId", user.getId().toString(),
+                "checkInDate", reservation.getCheckedIn().toString()
+        );
+
+        CreatePaymentRequest paymentRequest = new CreatePaymentRequest(
+                reservation.getId(),
+                reservation.getTotalPrice(),
+                "EUR",
+                user.getMail(),
+                metadata
+        );
+
+        PaymentResponse paymentResponse = paymentService.createPayment(paymentRequest);
+        emailService.createEmailOutbox(user, reservation, notification, null, paymentResponse.clientSecret());
     }
 }

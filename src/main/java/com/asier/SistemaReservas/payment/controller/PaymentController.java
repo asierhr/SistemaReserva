@@ -28,6 +28,15 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/stripe")
+    public ResponseEntity<String> handleStripeWebhook(
+            @RequestBody String payload,
+            @RequestHeader("Stripe-Signature") String signature) {
+
+        paymentService.processWebhook(payload, signature);
+        return ResponseEntity.ok("Webhook processed");
+    }
+
     @GetMapping("/{paymentId}")
     public ResponseEntity<PaymentResponse> getPaymentStatus(@PathVariable Long paymentId) {
         PaymentResponse response = paymentService.getPaymentStatus(paymentId);

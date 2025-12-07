@@ -18,12 +18,11 @@ public class ReservationEventProducer {
     @Value("${topics.booking-created}")
     private String topic;
 
-    public void sendReservationCreatedEvent(ReservationEntity reservation, String qrCodeBase64) throws JsonProcessingException {
+    public void sendReservationCreatedEvent(ReservationEntity reservation) throws JsonProcessingException {
         ReservationCreatedKafkaEvent event = new ReservationCreatedKafkaEvent(
                 reservation.getId(),
                 reservation.getUser().getId(),
                 reservation.getTotalPrice(),
-                qrCodeBase64,
                 reservation.getReservationDate(),
                 reservation.getBookingStatus()
         );

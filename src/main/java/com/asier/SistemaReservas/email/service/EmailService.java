@@ -9,7 +9,8 @@ import java.util.List;
 
 public interface EmailService {
     void sendReservationConfirmation(UserEntity user, ReservationEntity reservation, String qrCodeBase64);
-    void createEmailOutbox(UserEntity user, ReservationEntity reservation, NotificationEntity notification, String qrCodeBase64);
+    void sendPendingPaymentReservation(UserEntity user, ReservationEntity reservation, String clientSecret);
+    void createEmailOutbox(UserEntity user, ReservationEntity reservation, NotificationEntity notification, String qrCodeBase64, String clientSecret);
     void updateEmailOutbox(EmailOutboxEntity emailOutbox);
     List<EmailOutboxEntity> findEmailsPendingToProcess(int limit);
 }

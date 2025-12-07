@@ -1,6 +1,7 @@
 package com.asier.SistemaReservas.reservation.controller;
 
 import com.asier.SistemaReservas.reservation.domain.enums.BookingStatus;
+import com.asier.SistemaReservas.reservation.exceptions.ReservationNotFoundException;
 import com.asier.SistemaReservas.reservation.service.ReservationService;
 import com.asier.SistemaReservas.reservation.domain.entity.ReservationEntity;
 import com.asier.SistemaReservas.reservation.domain.records.CheckInResponse;
@@ -27,41 +28,25 @@ public class ReservationController {
 
     @PostMapping(path = "/reservations/checkIn/validate")
     public ResponseEntity<CheckInResponse> validateQR(@RequestBody QRValidationRequest request){
-        try{
-            JsonNode qrData = objectMapper.readTree(request.qrContent());
-            String type = qrData.get("type").asText();
-            Long reservationId = qrData.get("reservationId").asLong();
-            String mail = qrData.get("email").asText();
+        try {
+            CheckInResponse response = reservationService.validateQR(request);
 
-            ReservationEntity reservation = reservationService.getReservation(reservationId);
-            if(!reservation.getUser().getMail().equals(mail)){
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new CheckInResponse(false, "QR does not match reservation owner"));
+            if (!response.success()) {
+                return ResponseEntity.status(
+                        response.message().contains("does not match") ? HttpStatus.FORBIDDEN : HttpStatus.BAD_REQUEST
+                ).body(response);
             }
 
-            if(reservation.getBookingStatus() == BookingStatus.PAID){
-                return ResponseEntity.ok(
-                        new CheckInResponse(false, "Reservation not confirmed. Status: " + reservation.getBookingStatus())
-                );
-            }
+            return ResponseEntity.ok(response);
 
-            if (reservation.getCheckedIn() != null && reservation.getCheckedIn()) {
-                return ResponseEntity.ok(
-                        new CheckInResponse(true, "Already checked in at " + reservation.getCheckInTime())
-                );
-            }
-
-            reservation.setCheckedIn(true);
-            reservation.setCheckInTime(LocalDateTime.now());
-            reservationService.updateReservation(reservation);
-
-            return ResponseEntity.ok(
-                    new CheckInResponse(true, "Check-in successful!")
-            );
         } catch (JsonProcessingException e) {
             log.error("❌ Invalid QR format", e);
             return ResponseEntity.badRequest()
                     .body(new CheckInResponse(false, "Invalid QR code format"));
+        } catch (ReservationNotFoundException e) {
+            log.error("❌ Reservation not found", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new CheckInResponse(false, "Reservation not found"));
         } catch (Exception e) {
             log.error("❌ Error during check-in", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

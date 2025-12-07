@@ -25,6 +25,7 @@ public class AuthController {
 
     @PostMapping(path = "/auth/login")
     public ResponseEntity<TokenResponse> authenticate(@RequestBody LoginRequest request){
+        System.out.println("🚀 LOGIN ENDPOINT LLAMADO");
         final TokenResponse token = service.login(request);
         return ResponseEntity.ok(token);
     }

@@ -1,21 +1,32 @@
 package com.asier.SistemaReservas.system.QR.impl;
 
+import com.asier.SistemaReservas.reservation.domain.entity.ReservationEntity;
+import com.asier.SistemaReservas.reservation.flightReservation.domain.entity.FlightReservationEntity;
+import com.asier.SistemaReservas.reservation.flightReservation.service.FlightReservationService;
+import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
+import com.asier.SistemaReservas.reservation.hotelReservation.service.HotelReservationService;
 import com.asier.SistemaReservas.system.QR.QRCodeService;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class QrCodeServiceImpl implements QRCodeService {
+    private final FlightReservationService flightReservationService;
+    private final HotelReservationService hotelReservationService;
+
     @Override
     public String generateQRCodeBase64(String content, int width, int height) {
         try{
@@ -35,14 +46,6 @@ public class QrCodeServiceImpl implements QRCodeService {
         MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
 
         return outputStream.toByteArray();
-    }
-
-    @Override
-    public String generateReservationQRContent(Long reservationId, String userEmail, String flightNumber, String departureDate) {
-        return String.format(
-                "RESERVATION_ID:%d|EMAIL:%s|FLIGHT:%s|DATE:%s",
-                reservationId, userEmail, flightNumber, departureDate
-        );
     }
 
     @Override
@@ -75,5 +78,49 @@ public class QrCodeServiceImpl implements QRCodeService {
         """,
                 reservationId, userEmail, hotelName, checkInDate, checkOutDate
         );
+    }
+
+    @Override
+    public String generateReservationQRContentJSON(ReservationEntity reservation) {
+        String qrCodeBase64 = "";
+        if (reservation instanceof FlightReservationEntity) {
+            FlightReservationEntity flightReservation = flightReservationService.getFlightById(reservation.getId());
+            String qrContent = generateFlightQRContentJSON(
+                    flightReservation.getId(),
+                    flightReservation.getUser().getMail(),
+                    flightReservation.getFlight().getAirline(),
+                    flightReservation.getFlight().getDepartureTime().toString(),
+                    flightReservation.getSeat().stream()
+                            .map(s -> s.getSeatNumber())
+                            .collect(Collectors.joining(", "))
+            );
+
+            log.info("QR Content: {}", qrContent);
+
+            qrCodeBase64 = generateQRCodeBase64(qrContent, 300, 300);
+
+            log.info("Reservation sent to Kafka: {}", flightReservation.getId());
+
+        } else if (reservation instanceof HotelReservationEntity) {
+            HotelReservationEntity hotelReservation = hotelReservationService.getReservationById(reservation.getId());
+            String qrContent = generateHotelQRContentJSON(
+                    hotelReservation.getId(),
+                    hotelReservation.getUser().getMail(),
+                    hotelReservation.getHotel().getHotelName(),
+                    hotelReservation.getCheckIn().toString(),
+                    hotelReservation.getCheckOut().toString()
+            );
+
+            log.info("QR Content: {}", qrContent);
+
+            System.out.println("Hola");
+
+            qrCodeBase64 = generateQRCodeBase64(qrContent, 300, 300);
+
+            System.out.println("Hola");
+
+            log.info("Reservation sent to Kafka: {}", hotelReservation.getId());
+        }
+        return qrCodeBase64;
     }
 }

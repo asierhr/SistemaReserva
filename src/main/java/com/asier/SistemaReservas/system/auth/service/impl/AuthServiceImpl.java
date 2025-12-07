@@ -2,6 +2,7 @@ package com.asier.SistemaReservas.system.auth.service.impl;
 
 import com.asier.SistemaReservas.aiport.employee.service.AirportEmployeeInfoService;
 import com.asier.SistemaReservas.aiport.service.AirportService;
+import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
 import com.asier.SistemaReservas.system.auth.records.LoginRequest;
 import com.asier.SistemaReservas.system.auth.records.RegisterRequest;
 import com.asier.SistemaReservas.system.auth.records.TokenResponse;
@@ -37,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private final HotelEmployeeInfoService hotelEmployeeInfoService;
     private final AirportService airportService;
     private final HotelService hotelService;
+    private final LoyaltyService loyaltyService;
 
     @Override
     public TokenResponse register(RegisterRequest register) {
@@ -78,6 +80,8 @@ public class AuthServiceImpl implements AuthService {
                     airportEmployeeInfoService.createAirportEmployee(airportEmployeeInfo);
                 }
                 break;
+            case USER:
+                loyaltyService.createLoyaltyUser(user);
             default:
                 break;
         }

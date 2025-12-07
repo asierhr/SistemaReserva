@@ -33,8 +33,11 @@ public class EmailOutboxEntity {
     @OneToOne
     private NotificationEntity notification;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String qrCodeBase64;
+
+    @Column(columnDefinition = "TEXT")
+    private String clientSecret;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

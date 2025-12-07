@@ -1,6 +1,7 @@
 package com.asier.SistemaReservas.email.Job;
 
 import com.asier.SistemaReservas.email.domain.entity.EmailOutboxEntity;
+import com.asier.SistemaReservas.reservation.domain.enums.BookingStatus;
 import com.asier.SistemaReservas.reservation.flightReservation.domain.entity.FlightReservationEntity;
 import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
 import com.asier.SistemaReservas.email.domain.enums.OutboxStatus;
@@ -47,8 +48,11 @@ public class EmailOutboxJob extends QuartzJobBean{
                 Hibernate.initialize(hotelRes.getHotel());
             }
 
-            emailService.sendReservationConfirmation(outbox.getUser(), outbox.getReservation(), outbox.getQrCodeBase64());
+            if(outbox.getReservation().getBookingStatus().equals(BookingStatus.PENDING_PAYMENT)){
 
+            }else if(outbox.getReservation().getBookingStatus().equals(BookingStatus.PAID)) {
+                emailService.sendReservationConfirmation(outbox.getUser(), outbox.getReservation(), outbox.getQrCodeBase64());
+            }
             outbox.setOutboxStatus(OutboxStatus.SENT);
             outbox.setSentAt(LocalDateTime.now());
             emailService.updateEmailOutbox(outbox);

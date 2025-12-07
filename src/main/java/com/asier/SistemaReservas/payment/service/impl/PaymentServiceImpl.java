@@ -1,5 +1,11 @@
 package com.asier.SistemaReservas.payment.service.impl;
 
+import com.asier.SistemaReservas.email.service.EmailService;
+import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
+import com.asier.SistemaReservas.notification.domain.entity.NotificationEntity;
+import com.asier.SistemaReservas.notification.domain.enums.NotificationStatus;
+import com.asier.SistemaReservas.notification.domain.enums.NotificationType;
+import com.asier.SistemaReservas.notification.service.NotificationService;
 import com.asier.SistemaReservas.payment.exception.PaymentCardException;
 import com.asier.SistemaReservas.payment.exception.PaymentConfigurationException;
 import com.asier.SistemaReservas.payment.repository.PaymentRepository;
@@ -9,6 +15,7 @@ import com.asier.SistemaReservas.payment.domain.enums.PaymentMethod;
 import com.asier.SistemaReservas.payment.domain.enums.PaymentStatus;
 import com.asier.SistemaReservas.payment.domain.records.CreatePaymentRequest;
 import com.asier.SistemaReservas.payment.service.PaymentService;
+import com.asier.SistemaReservas.system.QR.QRCodeService;
 import com.stripe.exception.*;
 import com.stripe.model.Charge;
 import com.stripe.model.Event;
@@ -39,6 +46,10 @@ import java.util.Optional;
 public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final ReservationService reservationService;
+    private final LoyaltyService loyaltyService;
+    private final EmailService emailService;
+    private final QRCodeService qrCodeService;
+    private final NotificationService notificationService;
 
     @Value("${stripe.webhook-secret}")
     private String webhookSecret;
@@ -179,9 +190,6 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    /**
-     * Maneja el evento de pago exitoso
-     */
     private void handlePaymentIntentSucceeded(Event event) {
         PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer()
                 .getObject()
@@ -219,7 +227,28 @@ public class PaymentServiceImpl implements PaymentService {
         reservation.setBookingStatus(BookingStatus.PAID);
         reservationService.updateReservation(reservation);
 
+        processInformation(reservation, payment);
+
         log.info("✅ Payment and reservation updated successfully");
+    }
+
+    @Transactional
+    private void processInformation(ReservationEntity reservation, PaymentEntity payment){
+        loyaltyService.updateLoyalty(reservation.getUser().getId(), payment.getAmount().intValue());
+
+        String qrCodeBase64 = qrCodeService.generateReservationQRContentJSON(reservation);
+
+        NotificationEntity notification = NotificationEntity.builder()
+                .user(reservation.getUser())
+                .reservation(reservation)
+                .message("Your reservation with ID" + reservation.getId() + "has been created")
+                .type(NotificationType.RESERVATION_PAID)
+                .status(NotificationStatus.UNREAD)
+                .build();
+
+        notificationService.createNotification(notification);
+
+        emailService.createEmailOutbox(reservation.getUser(), reservation, notification, qrCodeBase64, null);
     }
 
     private void handlePaymentIntentFailed(Event event) {
@@ -352,8 +381,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         refundPayment(payment.get().getId(), amount);
     }
-
-    // === HELPERS ===
 
     private Long toStripeAmount(BigDecimal amount) {
         return amount.multiply(new BigDecimal("100")).longValue();

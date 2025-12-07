@@ -2,6 +2,7 @@ package com.asier.SistemaReservas.notification.domain.enums;
 
 public enum NotificationType {
     RESERVATION_CONFIRMED,
+    RESERVATION_PAID,
     RESERVATION_CANCELLED,
     FLIGHT_DELAYED,
     FLIGHT_CANCELLED,
