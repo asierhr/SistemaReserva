@@ -27,6 +27,10 @@ public abstract class ReservationEntity {
 
     private LocalDateTime reservationDate;
 
+    private BigDecimal totalPriceAfterDiscount;
+
+    private BigDecimal refundedAmount;
+
     private BigDecimal totalPrice;
 
     @Column(name = "checked_in")
@@ -37,6 +41,8 @@ public abstract class ReservationEntity {
 
     @Enumerated(EnumType.STRING)
     private BookingStatus bookingStatus;
+
+    private LocalDateTime cancellationDeadline;
 
     @ManyToOne
     private UserEntity user;

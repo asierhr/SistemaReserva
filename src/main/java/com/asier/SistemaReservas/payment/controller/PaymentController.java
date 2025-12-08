@@ -43,15 +43,6 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/refund")
-    public ResponseEntity<String> initiateRefund(
-            @RequestParam Long reservationId,
-            @RequestParam BigDecimal amount
-    ) {
-        paymentService.initiateRefund(reservationId, amount);
-        return ResponseEntity.ok("Refund initiated successfully");
-    }
-
     @PostMapping("/webhook")
     public ResponseEntity<String> handleWebhook(
             @RequestBody String payload,

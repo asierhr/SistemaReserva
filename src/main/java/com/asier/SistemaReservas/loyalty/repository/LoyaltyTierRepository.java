@@ -1,6 +1,6 @@
 package com.asier.SistemaReservas.loyalty.repository;
 
-import com.asier.SistemaReservas.loyalty.domain.LoyaltyTierEntity;
+import com.asier.SistemaReservas.loyalty.domain.entity.LoyaltyTierEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -83,6 +83,198 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Override
+    @Async
+    public void sendRefundedPaymentConfirmation(UserEntity user, ReservationEntity reservation) {
+        try{
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(user.getMail());
+            helper.setSubject("Reservation Confirmed - #" + reservation.getId());
+            helper.setText(buildRefundedPaymentMessageHTML(user,reservation), true);
+
+            mailSender.send(message);
+            log.info("✅ Email sent successfully to {}", user.getMail());
+        } catch (Exception e) {
+            log.error("Failed to send email to {}", user.getMail(), e);
+        }
+    }
+
+    private String buildRefundedPaymentMessageHTML(UserEntity user, ReservationEntity reservation) {
+
+        String reservationType;
+        String details;
+
+        if (reservation instanceof FlightReservationEntity flightRes) {
+            reservationType = "Flight";
+            details = String.format("""
+            <p><strong>Flight:</strong> %s</p>
+            <p><strong>Departure:</strong> %s</p>
+            <p><strong>Seats:</strong> %s</p>
+            """,
+                    flightRes.getFlight().getAirline(),
+                    flightRes.getFlight().getDepartureTime(),
+                    flightRes.getSeat().stream()
+                            .map(SeatEntity::getSeatNumber)
+                            .collect(Collectors.joining(", "))
+            );
+        } else if (reservation instanceof HotelReservationEntity hotelRes) {
+            reservationType = "Hotel";
+            details = String.format("""
+            <p><strong>Hotel:</strong> %s</p>
+            <p><strong>Check-in:</strong> %s</p>
+            <p><strong>Check-out:</strong> %s</p>
+            """,
+                    hotelRes.getHotel().getHotelName(),
+                    hotelRes.getCheckIn(),
+                    hotelRes.getCheckOut()
+            );
+        } else {
+            reservationType = "Reservation";
+            details = "";
+        }
+
+        return String.format("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .header {
+                    background-color: #4CAF50;
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                    border-radius: 5px 5px 0 0;
+                }
+                .content {
+                    background-color: #f9f9f9;
+                    padding: 30px;
+                    border: 1px solid #ddd;
+                }
+                .success-icon {
+                    text-align: center;
+                    font-size: 60px;
+                    margin: 20px 0;
+                }
+                .info-box {
+                    background-color: white;
+                    padding: 15px;
+                    border-left: 4px solid #4CAF50;
+                    margin: 20px 0;
+                }
+                .refund-amount {
+                    text-align: center;
+                    background-color: #e8f5e9;
+                    padding: 20px;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                }
+                .refund-amount .amount {
+                    font-size: 32px;
+                    color: #4CAF50;
+                    font-weight: bold;
+                }
+                .timeline {
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                }
+                .timeline-item {
+                    padding: 10px 0;
+                    border-left: 3px solid #4CAF50;
+                    padding-left: 20px;
+                    margin-left: 10px;
+                }
+                .footer {
+                    text-align: center;
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    border-top: 1px solid #ddd;
+                    color: #666;
+                    font-size: 12px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>💰 Refund Processed Successfully</h1>
+            </div>
+            
+            <div class="content">
+                <div class="success-icon">✅</div>
+                
+                <h2>Hello %s,</h2>
+                <p>Good news! Your refund has been processed successfully.</p>
+                
+                <div class="refund-amount">
+                    <p style="margin: 0; font-size: 16px; color: #666;">Refunded Amount</p>
+                    <div class="amount">$%.2f</div>
+                    <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
+                        The funds will be returned to your original payment method
+                    </p>
+                </div>
+                
+                <div class="info-box">
+                    <h3>📋 Cancelled Reservation Details</h3>
+                    <p><strong>Reservation Type:</strong> %s</p>
+                    <p><strong>Reservation ID:</strong> #%s</p>
+                    <p><strong>Original Date:</strong> %s</p>
+                    %s
+                </div>
+                
+                <div class="timeline">
+                    <h3>⏱️ What Happens Next?</h3>
+                    <div class="timeline-item">
+                        <strong>Step 1:</strong> Refund initiated (Completed ✓)
+                    </div>
+                    <div class="timeline-item">
+                        <strong>Step 2:</strong> Processing by payment provider (3-5 business days)
+                    </div>
+                    <div class="timeline-item">
+                        <strong>Step 3:</strong> Funds appear in your account (5-10 business days)
+                    </div>
+                </div>
+                
+                <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <p style="margin: 0;">
+                        <strong>📌 Important:</strong> The refund timeline may vary depending on your bank or card issuer. 
+                        If you don't see the funds after 10 business days, please contact your bank or reach out to us.
+                    </p>
+                </div>
+                
+                <p>We're sorry to see you cancel your reservation. If there's anything we could have done better, 
+                   please don't hesitate to let us know.</p>
+                
+                <p style="margin-top: 30px;">Thank you for choosing our service. We hope to serve you again in the future!</p>
+            </div>
+            
+            <div class="footer">
+                <p>Questions about your refund? Contact us at support@yourcompany.com</p>
+                <p>© 2025 Reservation System. All rights reserved.</p>
+            </div>
+        </body>
+        </html>
+        """,
+                user.getName(),
+                reservation.getTotalPrice(),
+                reservationType,
+                reservation.getId(),
+                reservation.getReservationDate().format(DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm")),
+                details
+        );
+    }
+
     private String buildPendingPaymentMessageHTML(UserEntity user, ReservationEntity reservation, String clientSecret){
         String paymentUrl = "/checkout?client_secret=" + clientSecret; //falta el frontend url
 

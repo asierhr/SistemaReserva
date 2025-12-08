@@ -1,5 +1,9 @@
 package com.asier.SistemaReservas.reservation.hotelReservation.service.impl;
 
+import com.asier.SistemaReservas.hotel.domain.entity.HotelEntity;
+import com.asier.SistemaReservas.loyalty.domain.entity.LoyaltyTierEntity;
+import com.asier.SistemaReservas.loyalty.service.LoyaltyBenefitsService;
+import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
 import com.asier.SistemaReservas.reservation.event.records.ReservationCreatedEvent;
 import com.asier.SistemaReservas.reservation.hotelReservation.domain.DTO.HotelReservationDTO;
 import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
@@ -25,6 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +46,8 @@ public class HotelReservationServiceImpl implements HotelReservationService {
     private final UserService userService;
     private final DistributedLockService distributedLockService;
     private final ApplicationEventPublisher eventPublisher;
+    private final LoyaltyBenefitsService loyaltyBenefitsService;
+    private final LoyaltyService loyaltyService;
 
     private static final int MAX_RETRIES = 3;
 
@@ -96,14 +103,19 @@ public class HotelReservationServiceImpl implements HotelReservationService {
             }
         }
 
+        BigDecimal price = validateRooms(hotelId, newRooms);
+        LoyaltyTierEntity tier = loyaltyService.getLoyaltyByUser(userService.getUserEntity().getId()).getLoyaltyTier();
+
         HotelReservationEntity hotel = HotelReservationEntity.builder()
                 .reservationDate(LocalDateTime.now())
                 .totalPrice(validateRooms(hotelId, newRooms))
+                .totalPriceAfterDiscount(loyaltyBenefitsService.applyBenefits(user,price).finalPrice())
                 .bookingStatus(BookingStatus.PENDING_PAYMENT)
                 .user(user)
                 .hotel(hotelService.getHotelEntity(hotelId))
                 .checkIn(request.checkIn())
                 .checkOut(request.checkOut())
+                .cancellationDeadline(loyaltyBenefitsService.getCancellationDeadline(tier,LocalDateTime.of(request.checkIn(), LocalTime.now())))
                 .build();
 
         List<RoomReservationEntity> roomReservations = new ArrayList<>();

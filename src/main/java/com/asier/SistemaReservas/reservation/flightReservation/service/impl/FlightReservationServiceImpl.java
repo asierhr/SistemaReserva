@@ -1,6 +1,10 @@
 package com.asier.SistemaReservas.reservation.flightReservation.service.impl;
 
+import com.asier.SistemaReservas.flight.domain.entity.FlightEntity;
 import com.asier.SistemaReservas.flight.service.FlightService;
+import com.asier.SistemaReservas.loyalty.domain.entity.LoyaltyTierEntity;
+import com.asier.SistemaReservas.loyalty.service.LoyaltyBenefitsService;
+import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
 import com.asier.SistemaReservas.reservation.flightReservation.domain.DTO.FlightReservationDTO;
 import com.asier.SistemaReservas.reservation.flightReservation.domain.entity.FlightReservationEntity;
 import com.asier.SistemaReservas.reservation.flightReservation.repository.FlightReservationRepository;
@@ -25,8 +29,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @Slf4j
@@ -39,6 +45,8 @@ public class FlightReservationServiceImpl implements FlightReservationService {
     private final UserService userService;
     private final DistributedLockService distributedLockService;
     private final ApplicationEventPublisher eventPublisher;
+    private final LoyaltyBenefitsService loyaltyBenefitsService;
+    private final LoyaltyService loyaltyService;
 
     private static final int MAX_RETRIES = 3;
 
@@ -71,9 +79,13 @@ public class FlightReservationServiceImpl implements FlightReservationService {
 
 
         for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
-            List<SeatEntity> availableSeats = seatService.getAvailableSeats(id).stream()
+            List<SeatEntity> candidates = seatService.getAvailableSeats(id).stream()
                     .filter(seat -> seat.getSeatClass() == request.seatClass())
-                    .sorted(Comparator.comparing(SeatEntity::getId))
+                    .toList();
+
+            Collections.shuffle(candidates, ThreadLocalRandom.current());
+
+            List<SeatEntity> availableSeats = candidates.stream()
                     .limit(request.flightSearch().passengers())
                     .toList();
 
@@ -121,21 +133,20 @@ public class FlightReservationServiceImpl implements FlightReservationService {
                 .map(seat -> seatService.getSeatFromId(seat.getId()))
                 .toList();
 
-        for (SeatEntity seat : freshSeats) {
-            if (!seat.isAvailable()) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Seat " + seat.getSeatNumber() + " was just taken");
-            }
-        }
+        BigDecimal price = validateSeatsAndCost(freshSeats, flightId);
+        LoyaltyTierEntity tier = loyaltyService.getLoyaltyByUser(userService.getUserEntity().getId()).getLoyaltyTier();
+        FlightEntity flight = flightService.getFlightEntity(flightId);
 
         FlightReservationEntity reservation = FlightReservationEntity.builder()
                 .reservationDate(LocalDateTime.now())
                 .bookingStatus(BookingStatus.PENDING_PAYMENT)
-                .totalPrice(validateSeatsAndCost(freshSeats, flightId))
+                .totalPrice(price)
+                .totalPriceAfterDiscount(loyaltyBenefitsService.applyBenefits(user,price).finalPrice())
                 .user(user)
-                .flight(flightService.getFlightEntity(flightId))
+                .flight(flight)
                 .seat(freshSeats)
                 .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .cancellationDeadline(loyaltyBenefitsService.getCancellationDeadline(tier, LocalDateTime.of(flight.getFlightDay(),flight.getDepartureTime())))
                 .build();
 
 

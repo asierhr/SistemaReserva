@@ -1,6 +1,6 @@
 package com.asier.SistemaReservas.loyalty.service.impl;
 
-import com.asier.SistemaReservas.loyalty.domain.LoyaltyTierEntity;
+import com.asier.SistemaReservas.loyalty.domain.entity.LoyaltyTierEntity;
 import com.asier.SistemaReservas.loyalty.repository.LoyaltyTierRepository;
 import com.asier.SistemaReservas.loyalty.service.LoyaltyTierService;
 import lombok.RequiredArgsConstructor;

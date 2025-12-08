@@ -1,4 +1,4 @@
-package com.asier.SistemaReservas.loyalty.domain;
+package com.asier.SistemaReservas.loyalty.domain.entity;
 
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import jakarta.persistence.*;

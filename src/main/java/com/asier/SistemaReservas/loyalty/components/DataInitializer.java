@@ -1,6 +1,6 @@
 package com.asier.SistemaReservas.loyalty.components;
 
-import com.asier.SistemaReservas.loyalty.domain.LoyaltyTierEntity;
+import com.asier.SistemaReservas.loyalty.domain.entity.LoyaltyTierEntity;
 import com.asier.SistemaReservas.loyalty.repository.LoyaltyTierRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;

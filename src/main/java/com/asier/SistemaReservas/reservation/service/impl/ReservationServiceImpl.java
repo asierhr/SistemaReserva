@@ -1,36 +1,40 @@
 package com.asier.SistemaReservas.reservation.service.impl;
 
+import com.asier.SistemaReservas.loyalty.domain.entity.LoyaltyTierEntity;
+import com.asier.SistemaReservas.loyalty.service.LoyaltyBenefitsService;
+import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
+import com.asier.SistemaReservas.payment.service.PaymentService;
 import com.asier.SistemaReservas.reservation.domain.enums.BookingStatus;
 import com.asier.SistemaReservas.reservation.domain.records.CheckInResponse;
 import com.asier.SistemaReservas.reservation.exceptions.ReservationNotFoundException;
-import com.asier.SistemaReservas.reservation.flightReservation.domain.entity.FlightReservationEntity;
-import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
 import com.asier.SistemaReservas.reservation.repository.ReservationRepository;
 import com.asier.SistemaReservas.reservation.domain.entity.ReservationEntity;
 import com.asier.SistemaReservas.reservation.service.ReservationService;
-import com.asier.SistemaReservas.seats.domain.entity.SeatEntity;
 import com.asier.SistemaReservas.system.QR.domain.records.QRValidationRequest;
 import com.asier.SistemaReservas.user.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ReservationServiceImpl implements ReservationService {
     private final ReservationRepository reservationRepository;
-    private final UserService userService;
     private final ObjectMapper objectMapper;
+    private final UserService userService;
+    private final LoyaltyBenefitsService loyaltyBenefitsService;
+    private final LoyaltyService loyaltyService;
+    private final PaymentService paymentService;
 
     @Override
     public ReservationEntity getReservation(Long id) {
@@ -44,17 +48,24 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
+    @Transactional
     public void refundReservation(ReservationEntity reservation) {
-        if(reservation instanceof FlightReservationEntity flightReservation){
-            List<SeatEntity> seats = flightReservation.getSeat();
-            for(SeatEntity seat: seats) {
-                seat.setAvailable(true);
-            }
-        }else if(reservation instanceof HotelReservationEntity hotelReservation){
-            hotelReservation.setCheckIn(null);
-            hotelReservation.setCheckOut(null);
-        }
-        updateReservation(reservation);
+        LoyaltyTierEntity tier = loyaltyService.getLoyaltyByUser(userService.getUserEntity().getId()).getLoyaltyTier();
+        BigDecimal cancellationFee = loyaltyBenefitsService.getCancellationFee(
+                tier,
+                reservation.getTotalPriceAfterDiscount(),
+                LocalDateTime.now(),
+                reservation.getCancellationDeadline(),
+                reservation.getReservationDate()
+        );
+        BigDecimal refundedAmount = reservation.getTotalPriceAfterDiscount().subtract(cancellationFee);
+
+        reservation.setRefundedAmount(refundedAmount);
+        reservation.setBookingStatus(BookingStatus.CANCELLED);
+
+        reservationRepository.save(reservation);
+
+        paymentService.initiateRefund(reservation,refundedAmount);
     }
 
     @Override
@@ -78,14 +89,10 @@ public class ReservationServiceImpl implements ReservationService {
             return new CheckInResponse(false,
                     "Reservation not confirmed. Status: " + reservation.getBookingStatus());
         }
-
-
         if (Boolean.TRUE.equals(reservation.getCheckedIn())) {
             return new CheckInResponse(true,
                     "Already checked in at " + reservation.getCheckInTime());
         }
-
-
         reservation.setCheckedIn(true);
         reservation.setCheckInTime(LocalDateTime.now());
         reservationRepository.save(reservation);

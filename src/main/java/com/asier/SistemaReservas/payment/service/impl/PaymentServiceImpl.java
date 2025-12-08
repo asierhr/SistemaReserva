@@ -15,6 +15,10 @@ import com.asier.SistemaReservas.payment.domain.enums.PaymentMethod;
 import com.asier.SistemaReservas.payment.domain.enums.PaymentStatus;
 import com.asier.SistemaReservas.payment.domain.records.CreatePaymentRequest;
 import com.asier.SistemaReservas.payment.service.PaymentService;
+import com.asier.SistemaReservas.reservation.flightReservation.domain.entity.FlightReservationEntity;
+import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
+import com.asier.SistemaReservas.room.domain.entity.RoomReservationEntity;
+import com.asier.SistemaReservas.seats.domain.entity.SeatEntity;
 import com.asier.SistemaReservas.system.QR.QRCodeService;
 import com.stripe.exception.*;
 import com.stripe.model.Charge;
@@ -38,6 +42,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -329,9 +334,7 @@ public class PaymentServiceImpl implements PaymentService {
         return mapToResponse(payment);
     }
 
-    /**
-     * Reembolsa un pago
-     */
+
     @Transactional
     @Override
     public void refundPayment(Long paymentId, BigDecimal amount) {
@@ -344,23 +347,25 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalStateException("Can only refund succeeded payments");
         }
 
+        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            throw new IllegalStateException("Payment already refunded");
+        }
+
         try {
             RefundCreateParams.Builder paramsBuilder = RefundCreateParams.builder()
                     .setPaymentIntent(payment.getStripePaymentIntentId());
 
-            // Si se especifica monto, reembolso parcial
             if (amount != null) {
                 paramsBuilder.setAmount(toStripeAmount(amount));
             }
-            // Si no, reembolso completo
 
             RefundCreateParams params = paramsBuilder.build();
             Refund refund = Refund.create(params);
 
+            payment.setStatus(PaymentStatus.REFUNDED);
+            paymentRepository.save(payment);
+
             log.info("✅ Refund created: {}", refund.getId());
-
-            // El webhook actualizará el estado automáticamente
-
         } catch (StripeException e) {
             log.error("Error creating refund", e);
             throw new PaymentProcessingException("Failed to refund payment: " + e.getMessage(), e);
@@ -368,18 +373,47 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public void initiateRefund(Long reservationId, BigDecimal amount) {
-        log.info("Initiating refund for reservation: {}, amount: {}", reservationId, amount);
+    public void initiateRefund(ReservationEntity reservation, BigDecimal amount){
+        log.info("Initiating refund for reservation: {}, amount: {}",reservation.getId(), amount);
 
         Optional<PaymentEntity> payment = paymentRepository
-                .findSuccessfulPaymentByReservation(reservationId);
+                .findSuccessfulPaymentByReservation(reservation.getId());
 
         if (payment.isEmpty()) {
-            log.warn("⚠️ No successful payment found for reservation: {}", reservationId);
+            log.warn("⚠️ No successful payment found for reservation: {}", reservation.getId());
             return;
         }
 
         refundPayment(payment.get().getId(), amount);
+
+        if(reservation instanceof FlightReservationEntity flightReservation){
+            List<SeatEntity> seats = flightReservation.getSeat();
+            for(SeatEntity seat: seats) {
+                seat.setAvailable(true);
+            }
+        }else if(reservation instanceof HotelReservationEntity hotelReservation){
+            hotelReservation.setCheckIn(null);
+            hotelReservation.setCheckOut(null);
+            for(RoomReservationEntity room: hotelReservation.getRooms()){
+                room.getRoom().setAvailable(true);
+            }
+        }
+        reservationService.updateReservation(reservation);
+        processCancelledInformation(reservation);
+    }
+
+    private void processCancelledInformation(ReservationEntity reservation){
+        NotificationEntity notification = NotificationEntity.builder()
+                .user(reservation.getUser())
+                .reservation(reservation)
+                .message("Your reservation with ID" + reservation.getId() + "has been created")
+                .type(NotificationType.RESERVATION_PAID)
+                .status(NotificationStatus.UNREAD)
+                .build();
+
+        notificationService.createNotification(notification);
+
+        emailService.createEmailOutbox(reservation.getUser(), reservation, notification, null, null);
     }
 
     private Long toStripeAmount(BigDecimal amount) {

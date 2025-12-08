@@ -1,11 +1,13 @@
 package com.asier.SistemaReservas.email.Job;
 
 import com.asier.SistemaReservas.email.domain.entity.EmailOutboxEntity;
+import com.asier.SistemaReservas.reservation.domain.entity.ReservationEntity;
 import com.asier.SistemaReservas.reservation.domain.enums.BookingStatus;
 import com.asier.SistemaReservas.reservation.flightReservation.domain.entity.FlightReservationEntity;
 import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
 import com.asier.SistemaReservas.email.domain.enums.OutboxStatus;
 import com.asier.SistemaReservas.email.service.EmailService;
+import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
@@ -48,17 +50,35 @@ public class EmailOutboxJob extends QuartzJobBean{
                 Hibernate.initialize(hotelRes.getHotel());
             }
 
-            if(outbox.getReservation().getBookingStatus().equals(BookingStatus.PENDING_PAYMENT)){
+            sendEmailByBookingStatus(outbox);
 
-            }else if(outbox.getReservation().getBookingStatus().equals(BookingStatus.PAID)) {
-                emailService.sendReservationConfirmation(outbox.getUser(), outbox.getReservation(), outbox.getQrCodeBase64());
-            }
             outbox.setOutboxStatus(OutboxStatus.SENT);
             outbox.setSentAt(LocalDateTime.now());
             emailService.updateEmailOutbox(outbox);
 
         } catch (Exception e) {
             handleError(outbox,e);
+        }
+    }
+
+    private void sendEmailByBookingStatus(EmailOutboxEntity outbox){
+        BookingStatus status = outbox.getReservation().getBookingStatus();
+        UserEntity user = outbox.getUser();
+        ReservationEntity reservation = outbox.getReservation();
+
+        switch (status) {
+            case PENDING_PAYMENT ->
+                    emailService.sendPendingPaymentReservation(user, reservation, outbox.getClientSecret());
+
+            case PAID ->
+                    emailService.sendReservationConfirmation(user, reservation, outbox.getQrCodeBase64());
+
+            case REFUNDED ->
+                    emailService.sendRefundedPaymentConfirmation(user, reservation);
+
+            default ->
+                    log.warn("No email handler for booking status: {} on reservation ID: {}",
+                            status, reservation.getId());
         }
     }
 

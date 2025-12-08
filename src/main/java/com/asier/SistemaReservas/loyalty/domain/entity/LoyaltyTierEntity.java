@@ -1,4 +1,4 @@
-package com.asier.SistemaReservas.loyalty.domain;
+package com.asier.SistemaReservas.loyalty.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

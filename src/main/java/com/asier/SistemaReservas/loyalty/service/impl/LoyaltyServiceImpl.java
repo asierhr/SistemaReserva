@@ -1,6 +1,6 @@
 package com.asier.SistemaReservas.loyalty.service.impl;
 
-import com.asier.SistemaReservas.loyalty.domain.LoyaltyPointsEntity;
+import com.asier.SistemaReservas.loyalty.domain.entity.LoyaltyPointsEntity;
 import com.asier.SistemaReservas.loyalty.repository.LoyaltyRepository;
 import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
 import com.asier.SistemaReservas.loyalty.service.LoyaltyTierService;
@@ -36,5 +36,10 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         }
         loyaltyTier.setPoints(newPoints);
         loyaltyRepository.save(loyaltyTier);
+    }
+
+    @Override
+    public LoyaltyPointsEntity getLoyaltyByUser(Long userId) {
+        return loyaltyRepository.findByUserId(userId);
     }
 }
