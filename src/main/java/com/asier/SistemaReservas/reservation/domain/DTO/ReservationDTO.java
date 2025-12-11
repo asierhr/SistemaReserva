@@ -18,6 +18,7 @@ public class ReservationDTO {
     private Long id;
     private LocalDateTime reservationDate;
     private BigDecimal totalPrice;
+    private Integer totalGuests;
     private BookingStatus bookingStatus;
     private UserDTO user;
 }

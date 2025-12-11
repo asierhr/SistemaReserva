@@ -3,8 +3,11 @@ package com.asier.SistemaReservas.flight.controller;
 import com.asier.SistemaReservas.flight.domain.DTO.FlightPairDTO;
 import com.asier.SistemaReservas.flight.domain.DTO.FlightDTO;
 import com.asier.SistemaReservas.flight.domain.DTO.FlightSummaryDTO;
-import com.asier.SistemaReservas.flight.domain.records.FlightSearch;
+import com.asier.SistemaReservas.search.flightSearch.domain.dto.FlightSearchDTO;
+import com.asier.SistemaReservas.search.flightSearch.domain.entity.FlightSearchEntity;
 import com.asier.SistemaReservas.flight.service.FlightService;
+import com.asier.SistemaReservas.system.IpLocation.service.IpGeolocationService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FlightController {
     private final FlightService flightService;
+    private final IpGeolocationService ipGeolocationService;
 
     @PostMapping(path = "/flights")
     public FlightDTO createFlight(@RequestBody FlightDTO flight){
@@ -27,9 +31,10 @@ public class FlightController {
         return ResponseEntity.ok(flight);
     }
 
-    @GetMapping(path = "/flights/search")
-    public List<FlightPairDTO> getFlightsBySearch(@RequestBody FlightSearch flightSearch){
-        return flightService.getFlightsBySearch(flightSearch);
+    @PostMapping(path = "/flights/search")
+    public List<FlightPairDTO> getFlightsBySearch(@RequestBody FlightSearchDTO flightSearch, HttpServletRequest request){
+        String ipAddress = ipGeolocationService.extractIpFromRequest(request);
+        return flightService.getFlightsBySearch(flightSearch, ipAddress);
     }
 
     @GetMapping(path = "/flights/origins")

@@ -29,6 +29,8 @@ public abstract class ReservationEntity {
 
     private BigDecimal totalPriceAfterDiscount;
 
+    private Integer totalGuests;
+
     private BigDecimal refundedAmount;
 
     private BigDecimal totalPrice;
@@ -43,6 +45,8 @@ public abstract class ReservationEntity {
     private BookingStatus bookingStatus;
 
     private LocalDateTime cancellationDeadline;
+
+    private LocalDateTime cancelledAt;
 
     @ManyToOne
     private UserEntity user;

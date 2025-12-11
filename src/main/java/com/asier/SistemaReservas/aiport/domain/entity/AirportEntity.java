@@ -1,8 +1,8 @@
 package com.asier.SistemaReservas.aiport.domain.entity;
 
-import com.asier.SistemaReservas.aiport.employee.domain.entity.AirportEmployeeInfoEntity;
+import com.asier.SistemaReservas.airline.employee.domain.entity.AirlineEmployeeInfoEntity;
 import com.asier.SistemaReservas.flight.domain.entity.FlightEntity;
-import com.asier.SistemaReservas.system.OtherFiles.Location;
+import com.asier.SistemaReservas.system.IpLocation.domain.Location;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,7 +30,7 @@ public class AirportEntity {
     private String airportName;
 
     @OneToMany(mappedBy = "airport", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    List<AirportEmployeeInfoEntity> employees = new ArrayList<>();
+    List<AirlineEmployeeInfoEntity> employees = new ArrayList<>();
 
     @OneToMany(mappedBy = "origin", cascade = CascadeType.ALL)
     private List<FlightEntity> departingFlights = new ArrayList<>();

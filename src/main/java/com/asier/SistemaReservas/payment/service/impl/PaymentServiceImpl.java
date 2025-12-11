@@ -1,6 +1,7 @@
 package com.asier.SistemaReservas.payment.service.impl;
 
 import com.asier.SistemaReservas.email.service.EmailService;
+import com.asier.SistemaReservas.hotel.hotelDashboard.event.records.HotelReservationCancelledEvent;
 import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
 import com.asier.SistemaReservas.notification.domain.entity.NotificationEntity;
 import com.asier.SistemaReservas.notification.domain.enums.NotificationStatus;
@@ -17,6 +18,7 @@ import com.asier.SistemaReservas.payment.domain.records.CreatePaymentRequest;
 import com.asier.SistemaReservas.payment.service.PaymentService;
 import com.asier.SistemaReservas.reservation.flightReservation.domain.entity.FlightReservationEntity;
 import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
+import com.asier.SistemaReservas.reservation.service.ReservationHelper;
 import com.asier.SistemaReservas.room.domain.entity.RoomReservationEntity;
 import com.asier.SistemaReservas.seats.domain.entity.SeatEntity;
 import com.asier.SistemaReservas.system.QR.QRCodeService;
@@ -31,12 +33,12 @@ import com.stripe.param.RefundCreateParams;
 import org.springframework.beans.factory.annotation.Value;
 import com.asier.SistemaReservas.reservation.domain.entity.ReservationEntity;
 import com.asier.SistemaReservas.reservation.domain.enums.BookingStatus;
-import com.asier.SistemaReservas.reservation.service.ReservationService;
 import com.asier.SistemaReservas.payment.exception.PaymentNotFoundException;
 import com.asier.SistemaReservas.payment.exception.PaymentProcessingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -50,11 +52,12 @@ import java.util.Optional;
 @Slf4j
 public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
-    private final ReservationService reservationService;
+    private final ReservationHelper reservationHelper;
     private final LoyaltyService loyaltyService;
     private final EmailService emailService;
     private final QRCodeService qrCodeService;
     private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${stripe.webhook-secret}")
     private String webhookSecret;
@@ -67,7 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponse createPayment(CreatePaymentRequest request) {
         log.info("Creating payment for reservation: {}", request.reservationId());
 
-        ReservationEntity reservation = reservationService.getReservation(request.reservationId());
+        ReservationEntity reservation = reservationHelper.getReservation(request.reservationId());
 
         if (reservation.getBookingStatus() == BookingStatus.PAID) {
             throw new IllegalStateException("Reservation already paid");
@@ -230,7 +233,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         ReservationEntity reservation = payment.getReservation();
         reservation.setBookingStatus(BookingStatus.PAID);
-        reservationService.updateReservation(reservation);
+        reservationHelper.updateReservation(reservation);
 
         processInformation(reservation, payment);
 
@@ -284,7 +287,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         ReservationEntity reservation = payment.getReservation();
         reservation.setBookingStatus(BookingStatus.PAYMENT_FAILED);
-        reservationService.updateReservation(reservation);
+        reservationHelper.updateReservation(reservation);
 
         log.info("Payment marked as failed");
     }
@@ -321,7 +324,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         ReservationEntity reservation = payment.getReservation();
         reservation.setBookingStatus(BookingStatus.REFUNDED);
-        reservationService.updateReservation(reservation);
+        reservationHelper.updateReservation(reservation);
     }
 
     @Override
@@ -397,8 +400,9 @@ public class PaymentServiceImpl implements PaymentService {
             for(RoomReservationEntity room: hotelReservation.getRooms()){
                 room.getRoom().setAvailable(true);
             }
+            eventPublisher.publishEvent(new HotelReservationCancelledEvent(hotelReservation.getId()));
         }
-        reservationService.updateReservation(reservation);
+        reservationHelper.updateReservation(reservation);
         processCancelledInformation(reservation);
     }
 

@@ -6,6 +6,7 @@ import java.util.List;
 public record ReservationHotelRequest(
         List<Long> roomIds,
         LocalDate checkIn,
-        LocalDate checkOut
+        LocalDate checkOut,
+        Integer totalGuests
 ) {
 }

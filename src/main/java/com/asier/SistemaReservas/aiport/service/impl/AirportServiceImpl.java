@@ -2,8 +2,8 @@ package com.asier.SistemaReservas.aiport.service.impl;
 
 import com.asier.SistemaReservas.aiport.domain.DTO.AirportDTO;
 import com.asier.SistemaReservas.aiport.domain.entity.AirportEntity;
-import com.asier.SistemaReservas.aiport.employee.domain.entity.AirportEmployeeInfoEntity;
-import com.asier.SistemaReservas.aiport.employee.service.AirportEmployeeInfoService;
+import com.asier.SistemaReservas.airline.employee.domain.entity.AirlineEmployeeInfoEntity;
+import com.asier.SistemaReservas.airline.employee.service.AirlineEmployeeInfoService;
 import com.asier.SistemaReservas.aiport.mapper.AirportMapper;
 import com.asier.SistemaReservas.aiport.repository.AirportRepository;
 import com.asier.SistemaReservas.aiport.service.AirportService;
@@ -25,7 +25,7 @@ import java.util.*;
 public class AirportServiceImpl implements AirportService {
     private final AirportRepository airportRepository;
     private final AirportMapper airportMapper;
-    private final AirportEmployeeInfoService airportEmployeeInfoService;
+    private final AirlineEmployeeInfoService airportEmployeeInfoService;
     private final FlightService flightService;
 
 
@@ -56,7 +56,7 @@ public class AirportServiceImpl implements AirportService {
 
     @Override
     public Map<String, List<FlightDTO>> getTodayFlights() {
-        AirportEmployeeInfoEntity airportEmployeeInfo = airportEmployeeInfoService.getAirportEmployeeInfo();
+        AirlineEmployeeInfoEntity airportEmployeeInfo = airportEmployeeInfoService.getAirlineEmployeeInfo();
         if(airportEmployeeInfo == null) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You have no rights to do this operation");
         AirportEntity airport = airportEmployeeInfo.getAirport();
 

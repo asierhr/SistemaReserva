@@ -1,6 +1,6 @@
 package com.asier.SistemaReservas.room.service.impl;
 
-import com.asier.SistemaReservas.hotel.domain.records.HotelSearch;
+import com.asier.SistemaReservas.search.hotelSearch.domain.dto.HotelSearchDTO;
 import com.asier.SistemaReservas.hotel.service.HotelService;
 import com.asier.SistemaReservas.room.domain.DTO.RoomDTO;
 import com.asier.SistemaReservas.room.domain.entity.RoomEntity;
@@ -8,6 +8,7 @@ import com.asier.SistemaReservas.room.domain.enums.RoomType;
 import com.asier.SistemaReservas.room.mapper.RoomMapper;
 import com.asier.SistemaReservas.room.repository.RoomRepository;
 import com.asier.SistemaReservas.room.service.RoomService;
+import com.asier.SistemaReservas.search.hotelSearch.service.HotelSearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final RoomMapper roomMapper;
     private final HotelService hotelService;
+    private final HotelSearchService hotelSearchService;
 
     @Override
     public Map<RoomType, List<RoomDTO>> getRooms(Long id) {
@@ -39,9 +41,11 @@ public class RoomServiceImpl implements RoomService {
 
 
     @Override
-    public Set<List<RoomDTO>> getRoomsBySearch(HotelSearch hotelSearch) {
-        int totalGuests = hotelSearch.guests();
-        String city = hotelSearch.city();
+    public Set<List<RoomDTO>> getRoomsBySearch(HotelSearchDTO hotelSearch, String ipAddress) {
+        hotelSearchService.saveHotelSearch(hotelSearch, ipAddress);
+
+        int totalGuests = hotelSearch.getGuests();
+        String city = hotelSearch.getCity();
 
         List<List<RoomType>> combinations = findRoomCombinations(totalGuests);
 
@@ -50,7 +54,7 @@ public class RoomServiceImpl implements RoomService {
                 .distinct()
                 .toList();
 
-        List<RoomEntity> candidateRooms = roomRepository.findAvailableRooms(city,allowedTypes,hotelSearch.checkIn(),hotelSearch.checkOut());
+        List<RoomEntity> candidateRooms = roomRepository.findAvailableRooms(city,allowedTypes,hotelSearch.getCheckIn(),hotelSearch.getCheckOut());
 
         Map<Long,List<RoomEntity>> roomsByHotel = candidateRooms.stream()
                 .collect(Collectors.groupingBy(r -> r.getHotel().getId()));

@@ -1,6 +1,7 @@
 package com.asier.SistemaReservas.reservation.hotelReservation.service.impl;
 
 import com.asier.SistemaReservas.hotel.domain.entity.HotelEntity;
+import com.asier.SistemaReservas.hotel.hotelDashboard.event.records.HotelReservationCreatedEvent;
 import com.asier.SistemaReservas.loyalty.domain.entity.LoyaltyTierEntity;
 import com.asier.SistemaReservas.loyalty.service.LoyaltyBenefitsService;
 import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
@@ -82,6 +83,7 @@ public class HotelReservationServiceImpl implements HotelReservationService {
                 HotelReservationEntity savedEntity = hotelReservationRepository.findById(hotelReservation.getId()).orElseThrow();
 
                 eventPublisher.publishEvent(new ReservationCreatedEvent(savedEntity));
+                eventPublisher.publishEvent(new HotelReservationCreatedEvent(savedEntity.getHotel().getId(), savedEntity.getId()));
 
             } catch (ResponseStatusException e) {
                 if (e.getStatusCode() == HttpStatus.CONFLICT && attempt < MAX_RETRIES - 1) {
@@ -113,6 +115,7 @@ public class HotelReservationServiceImpl implements HotelReservationService {
                 .bookingStatus(BookingStatus.PENDING_PAYMENT)
                 .user(user)
                 .hotel(hotelService.getHotelEntity(hotelId))
+                .totalGuests(request.totalGuests())
                 .checkIn(request.checkIn())
                 .checkOut(request.checkOut())
                 .cancellationDeadline(loyaltyBenefitsService.getCancellationDeadline(tier,LocalDateTime.of(request.checkIn(), LocalTime.now())))

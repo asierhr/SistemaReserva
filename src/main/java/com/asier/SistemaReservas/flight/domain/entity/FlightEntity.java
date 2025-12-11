@@ -1,6 +1,7 @@
 package com.asier.SistemaReservas.flight.domain.entity;
 
 import com.asier.SistemaReservas.aiport.domain.entity.AirportEntity;
+import com.asier.SistemaReservas.airline.domain.entity.AirlineEntity;
 import com.asier.SistemaReservas.seats.domain.entity.SeatEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,6 +22,9 @@ public class FlightEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private String flightNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "origin_id", nullable = false)
     @ToString.Exclude
@@ -31,9 +35,8 @@ public class FlightEntity {
     @ToString.Exclude
     private AirportEntity destination;
 
-
-    @Column(nullable = false)
-    private String airline;
+    @ManyToOne
+    private AirlineEntity airline;
 
     @Column(nullable = false)
     private LocalDate flightDay;

@@ -1,6 +1,7 @@
 package com.asier.SistemaReservas.flight.domain.DTO;
 
 import com.asier.SistemaReservas.aiport.domain.DTO.AirportDTO;
+import com.asier.SistemaReservas.airline.domain.dto.AirlineDTO;
 import com.asier.SistemaReservas.seats.domain.DTO.SeatDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,9 +18,10 @@ import java.util.List;
 @AllArgsConstructor
 public class FlightDTO {
     private Long id;
+    private String flightNumber;
     private AirportDTO origin;
     private AirportDTO destination;
-    private String airline;
+    private AirlineDTO airlineDTO;
     private LocalDate flightDay;
     private LocalTime departureTime;
     private LocalTime arrivalTime;

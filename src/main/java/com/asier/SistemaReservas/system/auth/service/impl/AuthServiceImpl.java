@@ -1,12 +1,12 @@
 package com.asier.SistemaReservas.system.auth.service.impl;
 
-import com.asier.SistemaReservas.aiport.employee.service.AirportEmployeeInfoService;
+import com.asier.SistemaReservas.airline.employee.service.AirlineEmployeeInfoService;
 import com.asier.SistemaReservas.aiport.service.AirportService;
 import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
 import com.asier.SistemaReservas.system.auth.records.LoginRequest;
 import com.asier.SistemaReservas.system.auth.records.RegisterRequest;
 import com.asier.SistemaReservas.system.auth.records.TokenResponse;
-import com.asier.SistemaReservas.aiport.employee.domain.entity.AirportEmployeeInfoEntity;
+import com.asier.SistemaReservas.airline.employee.domain.entity.AirlineEmployeeInfoEntity;
 import com.asier.SistemaReservas.hotel.employee.domain.entity.HotelEmployeeInfoEntity;
 import com.asier.SistemaReservas.hotel.employee.service.HotelEmployeeInfoService;
 import com.asier.SistemaReservas.hotel.service.HotelService;
@@ -34,7 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final AirportEmployeeInfoService airportEmployeeInfoService;
+    private final AirlineEmployeeInfoService airportEmployeeInfoService;
     private final HotelEmployeeInfoService hotelEmployeeInfoService;
     private final AirportService airportService;
     private final HotelService hotelService;
@@ -73,11 +73,11 @@ public class AuthServiceImpl implements AuthService {
                 break;
             case AIRPORT_WORKER:
                 if(request.airportId() != null){
-                    AirportEmployeeInfoEntity airportEmployeeInfo = AirportEmployeeInfoEntity.builder()
+                    AirlineEmployeeInfoEntity airportEmployeeInfo = AirlineEmployeeInfoEntity.builder()
                             .user(user)
                             .airport(airportService.getAirport(request.airportId()))
                             .build();
-                    airportEmployeeInfoService.createAirportEmployee(airportEmployeeInfo);
+                    airportEmployeeInfoService.createAirlineEmployee(airportEmployeeInfo);
                 }
                 break;
             case USER:

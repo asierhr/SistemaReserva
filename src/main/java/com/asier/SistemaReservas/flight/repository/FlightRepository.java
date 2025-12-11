@@ -7,14 +7,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Repository
 public interface FlightRepository extends JpaRepository<FlightEntity, Long> {
-    @Query("SELECT f FROM FlightEntity f WHERE f.origin.id = :originId AND f.destination.id = :destinationId AND f.flightDay = :flightDay")
+    @Query("SELECT f FROM FlightEntity f WHERE f.origin.id = :originId AND f.flightDay = :flightDay")
     List<FlightEntity> getFlightsByFlightSearch(
             @Param("originId") Long originId,
-            @Param("destinationId") Long destinationId,
             @Param("flightDay") LocalDate flightDay
     );
 
@@ -24,5 +24,17 @@ public interface FlightRepository extends JpaRepository<FlightEntity, Long> {
     @Query("SELECT DISTINCT f.destination.location.city FROM FlightEntity f")
     List<String> findAllDestinations();
 
-    boolean existsByAirlineAndFlightDay(String airline, LocalDate flightDay);
+    @Query("""
+    SELECT EXISTS (
+        SELECT 1 FROM FlightEntity f 
+        WHERE f.flightNumber = :flightNumber 
+        AND f.airline.id = :airlineId 
+        AND f.flightDay = :flightDay
+    )
+    """)
+    boolean existsFlight(
+            @Param("flightNumber") String flightNumber,
+            @Param("airlineId") Long airlineId,
+            @Param("flightDay") LocalDate flightDay
+    );
 }

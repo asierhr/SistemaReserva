@@ -62,6 +62,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         reservation.setRefundedAmount(refundedAmount);
         reservation.setBookingStatus(BookingStatus.CANCELLED);
+        reservation.setCancelledAt(LocalDateTime.now());
 
         reservationRepository.save(reservation);
 

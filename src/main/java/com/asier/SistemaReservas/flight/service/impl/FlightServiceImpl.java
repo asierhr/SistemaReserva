@@ -1,22 +1,33 @@
 package com.asier.SistemaReservas.flight.service.impl;
 
 import com.asier.SistemaReservas.aiport.domain.entity.AirportEntity;
+import com.asier.SistemaReservas.airline.employee.domain.entity.AirlineEmployeeInfoEntity;
+import com.asier.SistemaReservas.airline.employee.service.AirlineEmployeeInfoService;
 import com.asier.SistemaReservas.flight.domain.DTO.FlightPairDTO;
 import com.asier.SistemaReservas.flight.domain.DTO.FlightDTO;
 import com.asier.SistemaReservas.flight.domain.DTO.FlightSummaryDTO;
 import com.asier.SistemaReservas.flight.domain.entity.FlightEntity;
-import com.asier.SistemaReservas.flight.domain.records.FlightSearch;
+import com.asier.SistemaReservas.search.flightSearch.domain.dto.FlightSearchDTO;
 import com.asier.SistemaReservas.flight.mapper.FlightMapper;
 import com.asier.SistemaReservas.flight.repository.FlightRepository;
 import com.asier.SistemaReservas.flight.service.FlightHelper;
 import com.asier.SistemaReservas.flight.service.FlightService;
+import com.asier.SistemaReservas.search.flightSearch.service.FlightSearchService;
+import com.asier.SistemaReservas.user.service.UserService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 
 @Service
@@ -25,23 +36,30 @@ public class FlightServiceImpl implements FlightService {
     private final FlightRepository flightRepository;
     private final FlightMapper flightMapper;
     private final FlightHelper flightHelper;
+    private final FlightSearchService flightSearchService;
+    private final AirlineEmployeeInfoService airlineEmployeeInfoService;
 
     @Override
+    @Transactional
     public FlightDTO createFlight(FlightDTO flight) {
-        if(flightRepository.existsByAirlineAndFlightDay(flight.getAirline(), flight.getFlightDay())) {
+        if(flightRepository.existsFlight(flight.getFlightNumber(),flight.getAirlineDTO().getId(),flight.getFlightDay())){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Flight already exists");
         }
+
+        if(flight.getFlightDay().isBefore(LocalDate.now()) || flight.getOrigin().getId().equals(flight.getDestination().getId()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot create flight");
+
+        AirlineEmployeeInfoEntity airlineEmployeeInfo = airlineEmployeeInfoService.getAirlineEmployeeInfo();
+
+        if(airlineEmployeeInfo == null || !airlineEmployeeInfo.getAirline().getId().equals(flight.getAirlineDTO().getId())){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You're not allowed to create a flight from this airline");
+        }
+
         FlightEntity flightEntity = flightMapper.toEntity(flight);
-        AirportEntity origin = flightHelper.getAirport(flight.getOrigin().getId());
-        AirportEntity destination = flightHelper.getAirport(flight.getDestination().getId());
-
-        flightEntity.setOrigin(origin);
-        flightEntity.setDestination(destination);
-
-        origin.getDepartingFlights().add(flightEntity);
-        destination.getArrivingFlights().add(flightEntity);
         flightEntity.getSeats().forEach(seat -> seat.setFlight(flightEntity));
+
         FlightEntity savedFlight = flightRepository.save(flightEntity);
+
         return flightMapper.toDTO(savedFlight);
     }
 
@@ -72,41 +90,196 @@ public class FlightServiceImpl implements FlightService {
     }
 
     @Override
-    public List<FlightPairDTO> getFlightsBySearch(FlightSearch flightSearch) {
+    public List<FlightPairDTO> getFlightsBySearch(FlightSearchDTO flightSearch, String ipAddress) {
+        flightSearchService.saveSearch(flightSearch, ipAddress);
 
-        AirportEntity airportOrigin = flightHelper.getAirportByLocationCity(flightSearch.origin());
-        AirportEntity airportDestination = flightHelper.getAirportByLocationCity(flightSearch.destination());
+        AirportEntity airportOrigin = flightHelper.getAirportByLocationCity(flightSearch.getOrigin());
+        AirportEntity airportDestination = flightHelper.getAirportByLocationCity(flightSearch.getDestination());
 
-        List<FlightEntity> outboundFlights = flightRepository.getFlightsByFlightSearch(
-                airportOrigin.getId(),
-                airportDestination.getId(),
-                flightSearch.departureDay()
+        List<List<FlightEntity>> outboundOptions = findFlightRoutes(
+                airportOrigin,
+                airportDestination,
+                flightSearch.getDepartureDay(),
+                flightSearch.getPassengers(),
+                flightSearch.getMaxStops()
         );
 
-        List<FlightEntity> returnFlights = flightRepository.getFlightsByFlightSearch(
-                airportDestination.getId(),
-                airportOrigin.getId(),
-                flightSearch.returnDay()
+        List<List<FlightEntity>> returnOptions = findFlightRoutes(
+                airportDestination,
+                airportOrigin,
+                flightSearch.getReturnDay(),
+                flightSearch.getPassengers(),
+                flightSearch.getMaxStops()
         );
 
-        List<FlightSummaryDTO> outboundDTOs = flightMapper.toSummaryDTOList(outboundFlights).stream()
-                .filter(f -> flightHelper.getAvailableSeatsForFlight(f.getId()).size() >= flightSearch.passengers())
-                .toList();
-        List<FlightSummaryDTO> returnDTOs = flightMapper.toSummaryDTOList(returnFlights).stream()
-                .filter(f -> flightHelper.getAvailableSeatsForFlight(f.getId()).size() >= flightSearch.passengers())
+        List<List<FlightSummaryDTO>> outboundDTOs = outboundOptions.stream()
+                .map(flightMapper::toSummaryDTOList)
                 .toList();
 
-        List<FlightPairDTO> flightPairs = new ArrayList<>();
+        List<List<FlightSummaryDTO>> returnDTOs = returnOptions.stream()
+                .map(flightMapper::toSummaryDTOList)
+                .toList();
 
-        for (FlightSummaryDTO outbound : outboundDTOs) {
-            for (FlightSummaryDTO inbound : returnDTOs) {
-                if (outbound.getAirline().equals(inbound.getAirline()) &&
-                        inbound.getFlightDay().isAfter(outbound.getFlightDay())) {
-                    flightPairs.add(new FlightPairDTO(outbound, inbound));
+        return createFlightPairs(outboundDTOs, returnDTOs);
+    }
+
+    private List<List<FlightEntity>> findFlightRoutes(
+            AirportEntity origin,
+            AirportEntity destination,
+            LocalDate date,
+            Integer passengers,
+            Integer maxStops
+    ) {
+        List<List<FlightEntity>> routes = new ArrayList<>();
+
+        List<FlightEntity> directFlights = findDirectFlights(origin, destination, date, passengers);
+        directFlights.forEach(flight -> routes.add(List.of(flight)));
+
+        if (maxStops == null || maxStops == 0) {
+            return routes;
+        }
+
+        if (maxStops >= 1) {
+            List<List<FlightEntity>> oneStopRoutes = findOneStopFlights(
+                    origin, destination, date, passengers
+            );
+            routes.addAll(oneStopRoutes);
+        }
+
+        return routes;
+    }
+
+    private List<FlightEntity> findDirectFlights(
+            AirportEntity origin,
+            AirportEntity destination,
+            LocalDate date,
+            Integer passengers
+    ) {
+        List<FlightEntity> flights = flightRepository.getFlightsByFlightSearch(
+                origin.getId(),
+                date
+        );
+
+        return flights.stream()
+                .filter(f -> f.getDestination().equals(destination))
+                .filter(f -> hasAvailableSeats(f, passengers))
+                .toList();
+    }
+
+    private List<List<FlightEntity>> findOneStopFlights(
+            AirportEntity origin,
+            AirportEntity destination,
+            LocalDate date,
+            Integer passengers
+    ) {
+        List<List<FlightEntity>> routes = new ArrayList<>();
+
+        List<FlightEntity> firstLegFlights = flightRepository.getFlightsByFlightSearch(
+                        origin.getId(),
+                        date
+                ).stream()
+                .filter(f -> !f.getDestination().equals(destination))
+                .filter(f -> hasAvailableSeats(f, passengers))
+                .toList();
+
+        for (FlightEntity firstFlight : firstLegFlights) {
+            AirportEntity connectionAirport = firstFlight.getDestination();
+
+            List<FlightEntity> secondLegFlights = findConnectionFlights(
+                    connectionAirport,
+                    destination,
+                    LocalDateTime.of(firstFlight.getFlightDay(),firstFlight.getArrivalTime()),
+                    passengers
+            );
+
+            for (FlightEntity secondFlight : secondLegFlights) {
+                if (isValidConnection(firstFlight, secondFlight)) {
+                    routes.add(List.of(firstFlight, secondFlight));
                 }
             }
         }
-        return flightPairs;
+
+        return routes;
+    }
+
+
+    private List<FlightEntity> findConnectionFlights(
+            AirportEntity connectionAirport,
+            AirportEntity finalDestination,
+            LocalDateTime arrivalTime,
+            Integer passengers
+    ) {
+
+        List<FlightEntity> sameDayFlights = flightRepository.getFlightsByFlightSearch(
+                connectionAirport.getId(),
+                arrivalTime.toLocalDate()
+        );
+
+        List<FlightEntity> nextDayFlights = flightRepository.getFlightsByFlightSearch(
+                connectionAirport.getId(),
+                arrivalTime.toLocalDate().plusDays(1)
+        );
+
+        return Stream.concat(sameDayFlights.stream(), nextDayFlights.stream())
+                .filter(f -> f.getDestination().equals(finalDestination))
+                .filter(f -> hasAvailableSeats(f, passengers))
+                .filter(f -> LocalDateTime.of(f.getFlightDay(),f.getDepartureTime()).isAfter(arrivalTime.plusHours(1)))
+                .filter(f -> LocalDateTime.of(f.getFlightDay(),f.getDepartureTime()).isBefore(arrivalTime.plusHours(24)))
+                .toList();
+    }
+
+    private boolean isValidConnection(FlightEntity firstFlight, FlightEntity secondFlight) {
+        Duration connectionTime = Duration.between(
+                firstFlight.getArrivalTime(),
+                secondFlight.getDepartureTime()
+        );
+
+        return connectionTime.toMinutes() >= 60 && connectionTime.toHours() <= 6;
+    }
+
+    private List<FlightPairDTO> createFlightPairs(
+            List<List<FlightSummaryDTO>> outboundOptions,
+            List<List<FlightSummaryDTO>> returnOptions
+    ) {
+        List<FlightPairDTO> pairs = new ArrayList<>();
+
+        for (List<FlightSummaryDTO> outbound : outboundOptions) {
+            for (List<FlightSummaryDTO> inbound : returnOptions) {
+                FlightSummaryDTO outboundLast = outbound.get(outbound.size() - 1);
+                FlightSummaryDTO inboundFirst = inbound.get(0);
+                LocalDateTime lastOutboundArrival = LocalDateTime.of(outboundLast.getFlightDay(),outboundLast.getDepartureTime());
+                LocalDateTime firstInboundDeparture = LocalDateTime.of(inboundFirst.getFlightDay(),inboundFirst.getDepartureTime());
+
+                if (firstInboundDeparture.isAfter(lastOutboundArrival)) {
+                    BigDecimal totalPrice = calculateTotalPrice(outbound, inbound);
+                    int totalStops = (outbound.size() - 1) + (inbound.size() - 1);
+
+                    pairs.add(new FlightPairDTO(outbound, inbound, totalStops, totalPrice));
+                }
+            }
+        }
+        return pairs.stream()
+                .sorted(Comparator
+                        .comparing(FlightPairDTO::getTotalStops)
+                        .thenComparing(FlightPairDTO::getTotalPrice))
+                .toList();
+    }
+
+    private BigDecimal calculateTotalPrice(
+            List<FlightSummaryDTO> outbound,
+            List<FlightSummaryDTO> inbound
+    ) {
+        BigDecimal outboundPrice = outbound.stream()
+                .map(FlightSummaryDTO::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal inboundPrice = inbound.stream()
+                .map(FlightSummaryDTO::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return outboundPrice.add(inboundPrice);
+    }
+
+    private boolean hasAvailableSeats(FlightEntity flight, Integer requiredSeats) {
+        return flightHelper.getAvailableSeatsForFlight(flight.getId()).size() >= requiredSeats;
     }
 
     @Override
@@ -122,5 +295,10 @@ public class FlightServiceImpl implements FlightService {
     @Override
     public List<FlightDTO> transformListEntity(List<FlightEntity> flight) {
         return flightMapper.toDTOList(flight);
+    }
+
+    @Override
+    public List<FlightEntity> transformSummaryDTO(List<FlightSummaryDTO> flights) {
+        return flightMapper.toEntityList(flights);
     }
 }

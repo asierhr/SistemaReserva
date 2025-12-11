@@ -88,7 +88,7 @@ public class QrCodeServiceImpl implements QRCodeService {
             String qrContent = generateFlightQRContentJSON(
                     flightReservation.getId(),
                     flightReservation.getUser().getMail(),
-                    flightReservation.getFlight().getAirline(),
+                    flightReservation.getFlight().getAirline().getName(),
                     flightReservation.getFlight().getDepartureTime().toString(),
                     flightReservation.getSeat().stream()
                             .map(s -> s.getSeatNumber())

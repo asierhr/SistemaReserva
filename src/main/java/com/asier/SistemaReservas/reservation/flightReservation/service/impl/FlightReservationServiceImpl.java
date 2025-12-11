@@ -86,10 +86,10 @@ public class FlightReservationServiceImpl implements FlightReservationService {
             Collections.shuffle(candidates, ThreadLocalRandom.current());
 
             List<SeatEntity> availableSeats = candidates.stream()
-                    .limit(request.flightSearch().passengers())
+                    .limit(request.flightSearch().getPassengers())
                     .toList();
 
-            if (availableSeats.size() < request.flightSearch().passengers()) {
+            if (availableSeats.size() < request.flightSearch().getPassengers()) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Not enough seats available");
             }
 
@@ -144,6 +144,7 @@ public class FlightReservationServiceImpl implements FlightReservationService {
                 .totalPriceAfterDiscount(loyaltyBenefitsService.applyBenefits(user,price).finalPrice())
                 .user(user)
                 .flight(flight)
+                .totalGuests(request.flightSearch().getPassengers())
                 .seat(freshSeats)
                 .expiresAt(LocalDateTime.now().plusMinutes(15))
                 .cancellationDeadline(loyaltyBenefitsService.getCancellationDeadline(tier, LocalDateTime.of(flight.getFlightDay(),flight.getDepartureTime())))

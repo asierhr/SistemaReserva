@@ -10,6 +10,7 @@ import com.asier.SistemaReservas.email.service.EmailService;
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -22,6 +23,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class EmailOutboxJob extends QuartzJobBean{
     private final EmailService emailService;
 

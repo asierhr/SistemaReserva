@@ -4,7 +4,8 @@ import com.asier.SistemaReservas.comment.domain.entity.CommentEntity;
 import com.asier.SistemaReservas.hotel.employee.domain.entity.HotelEmployeeInfoEntity;
 import com.asier.SistemaReservas.hotel.favourite.domain.entity.HotelFavouriteEntity;
 import com.asier.SistemaReservas.hotel.history.domain.entity.HotelHistoryEntity;
-import com.asier.SistemaReservas.system.OtherFiles.Location;
+import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
+import com.asier.SistemaReservas.system.IpLocation.domain.Location;
 import com.asier.SistemaReservas.room.domain.entity.RoomEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -49,6 +50,9 @@ public class HotelEntity {
 
     @ManyToMany(mappedBy = "hotels", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<HotelFavouriteEntity> hotelFavourites = new ArrayList<>();
+
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<HotelReservationEntity> hotelReservations = new ArrayList<>();
 
     @OneToMany(mappedBy = "hotel" , cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<HotelEmployeeInfoEntity> hotelEmployees = new ArrayList<>();

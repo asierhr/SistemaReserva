@@ -6,9 +6,11 @@ import com.asier.SistemaReservas.comment.mapper.CommentMapper;
 import com.asier.SistemaReservas.comment.repository.CommentRepository;
 import com.asier.SistemaReservas.comment.service.CommentService;
 import com.asier.SistemaReservas.hotel.domain.entity.HotelEntity;
+import com.asier.SistemaReservas.hotel.hotelDashboard.event.records.CommentCreatedEvent;
 import com.asier.SistemaReservas.hotel.service.HotelService;
 import com.asier.SistemaReservas.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,6 +24,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentMapper commentMapper;
     private final UserService userService;
     private final HotelService hotelService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public CommentDTO createComment(Long hotelId, CommentDTO commentDTO) {
@@ -31,7 +34,7 @@ public class CommentServiceImpl implements CommentService {
         comment.setUser(userService.getUserEntity());
         comment.setHotel(hotel);
         CommentEntity savedComment = commentRepository.save(comment);
-        hotelService.updateRating(hotel);
+        eventPublisher.publishEvent(new CommentCreatedEvent(hotelId));
         return commentMapper.toDTO(savedComment);
     }
 
