@@ -9,15 +9,13 @@ Este archivo docker-compose.yaml define la infraestructura necesaria para ejecut
 ## Servicios definidos
 -----------------------------------------------------------------------
 ### Servicio app
-<pre>   
-app :
+<pre>app :
 	build: . 
 	image:sistemareserva
 </pre>
 + Construye la imagen Docker desde el Dockerfile en el directorio actual
 + Asigna el nombre sistemareserva a la imagen
-<pre> 
-ports:
+<pre> ports:
       - "8080:8080"
 </pre>
 + Expone el puerto 8080 del contenedor al puerto 8080 del host
