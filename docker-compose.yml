@@ -1,6 +1,26 @@
-version: '3.8'
-
 services:
+  app:
+    build: .
+    image: sistemareserva       
+    ports:
+      - "8080:8080"
+    environment:
+      - MAIL_USERNAME=asierhr
+      - MAIL_PASSWORD=asierhr
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/reservas_db
+      - SPRING_DATASOURCE_USERNAME=asierhr
+      - SPRING_DATASOURCE_PASSWORD=asierhr
+      - SPRING_DATA_REDIS_HOST=redis        # AÑADIR ESTO
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+    restart: on-failure
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
@@ -17,7 +37,7 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
@@ -44,6 +64,12 @@ services:
       - mysql-data:/var/lib/mysql
       - ./mysql-dumps:/docker-entrypoint-initdb.d
     command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uasiderhr", "-pasierhr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
 
 
 volumes:
