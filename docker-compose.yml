@@ -10,7 +10,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/reservas_db
       - SPRING_DATASOURCE_USERNAME=asierhr
       - SPRING_DATASOURCE_PASSWORD=asierhr
-      - SPRING_DATA_REDIS_HOST=redis        # AÑADIR ESTO
+      - SPRING_DATA_REDIS_HOST=redis        
       - SPRING_DATA_REDIS_PORT=6379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
