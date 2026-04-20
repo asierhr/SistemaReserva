@@ -19,12 +19,18 @@ services:
       kafka:
         condition: service_started
     restart: on-failure
+    networks:
+        - app-network
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     ports:
       - "2181:2181"
+    networks:
+      - app-network
+    
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -40,6 +46,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
+    networks:
+      - app-network
 
   redis:
     image: redis:7-alpine
@@ -47,5 +55,12 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    networks:
+      - app-network
+
 volumes:
   redis-data:
+
+networks:
+  app-network:
+    driver: bridge

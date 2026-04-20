@@ -105,8 +105,8 @@ resource "aws_network_acl" "acl_publico" {
     rule_no = 120
     action = "allow"
     cidr_block = "10.0.2.0/24"
-    from_port = 5432
-    to_port = 5432
+    from_port = 3306
+    to_port = 3306
   }
 
   ingress {
@@ -114,8 +114,8 @@ resource "aws_network_acl" "acl_publico" {
     rule_no = 130
     action = "allow"
     cidr_block = "10.0.3.0/24"
-    from_port = 5432
-    to_port = 5432
+    from_port = 3306
+    to_port = 3306
   }
 
   ingress {
@@ -150,8 +150,8 @@ resource "aws_network_acl" "acl_privado" {
     rule_no    = 100
     action     = "allow"
     cidr_block = "10.0.0.0/24"
-    from_port  = 5432
-    to_port    = 5432
+    from_port  = 3306
+    to_port    = 3306
   }
 
   ingress {
@@ -159,8 +159,8 @@ resource "aws_network_acl" "acl_privado" {
     rule_no    = 110
     action     = "allow"
     cidr_block = "10.0.1.0/24"
-    from_port  = 5432
-    to_port    = 5432
+    from_port  = 3306
+    to_port    = 3306
   }
   
   egress {
@@ -219,8 +219,8 @@ resource "aws_security_group" "sg-privado" {
     vpc_id = aws_vpc.main.id
 
     ingress {
-        from_port = 5432
-        to_port = 5432
+        from_port = 3306
+        to_port = 3306
         protocol = "tcp"
         security_groups = [aws_security_group.sg_publico.id]
     }

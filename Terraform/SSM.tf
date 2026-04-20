@@ -1,7 +1,7 @@
 resource "aws_ssm_parameter" "db_endpoint" {
   name = "/config/SistemaReservas/spring.datasource.url"
   type = "String"
-  value = "jdbc:mysql://${aws_db_instance.rds.address}/my_db"
+  value = "jdbc:mysql://${aws_db_instance.rds.address}/mydb"
 }
 
 resource "aws_ssm_parameter" "db_user" {

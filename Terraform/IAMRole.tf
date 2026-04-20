@@ -22,8 +22,11 @@ resource "aws_iam_role_policy" "read_ssm" {
         Version = "2012-10-17"
         Statement = [{
             Effect = "Allow"
-            Action = ["ssm:GetParameters", "ssm:GetParameter"]
-            Resource = "arn:aws:ssm:*:*:parameter/config/SistemaReservas/*"
+            Action = ["ssm:GetParameters", "ssm:GetParameter", "ssm:GetParametersByPath"]
+            Resource = [
+                "arn:aws:ssm:eu-west-3:248032057693:parameter/config/SistemaReservas/*",
+                "arn:aws:ssm:eu-west-3:248032057693:parameter/config/SistemaReservas/" 
+            ]
         }]
     })
 }
