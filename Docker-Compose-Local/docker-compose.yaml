@@ -1,11 +1,4 @@
 services:
-  app:
-    build: .
-    depends_on:
-      mysql: { condition: service_healthy }
-      redis: { condition: service_started }
-      kafka: { condition: service_started }
-
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
