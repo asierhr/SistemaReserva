@@ -249,14 +249,15 @@ public class PaymentServiceImpl implements PaymentService {
         NotificationEntity notification = NotificationEntity.builder()
                 .user(reservation.getUser())
                 .reservation(reservation)
-                .message("Your reservation with ID" + reservation.getId() + "has been created")
+                .topic("Reservation paid")
+                .message("Your reservation with ID" + reservation.getId() + "has been paid")
                 .type(NotificationType.RESERVATION_PAID)
                 .status(NotificationStatus.UNREAD)
                 .build();
 
         notificationService.createNotification(notification);
 
-        emailService.createEmailOutbox(reservation.getUser(), reservation, notification, qrCodeBase64, null);
+        emailService.createEmailOutbox(reservation.getUser(), reservation, qrCodeBase64, null);
     }
 
     private void handlePaymentIntentFailed(Event event) {
@@ -410,14 +411,15 @@ public class PaymentServiceImpl implements PaymentService {
         NotificationEntity notification = NotificationEntity.builder()
                 .user(reservation.getUser())
                 .reservation(reservation)
-                .message("Your reservation with ID" + reservation.getId() + "has been created")
+                .topic("Reservation cancelled")
+                .message("Your reservation with ID" + reservation.getId() + "has been cancelled")
                 .type(NotificationType.RESERVATION_PAID)
                 .status(NotificationStatus.UNREAD)
                 .build();
 
         notificationService.createNotification(notification);
 
-        emailService.createEmailOutbox(reservation.getUser(), reservation, notification, null, null);
+        emailService.createEmailOutbox(reservation.getUser(), reservation, null, null);
     }
 
     private Long toStripeAmount(BigDecimal amount) {

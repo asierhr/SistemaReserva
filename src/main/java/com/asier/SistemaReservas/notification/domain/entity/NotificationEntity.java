@@ -26,6 +26,9 @@ public class NotificationEntity {
     private UserEntity user;
 
     @Column(nullable = false)
+    private String topic;
+
+    @Column(nullable = false)
     private String message;
 
     @Enumerated(EnumType.STRING)

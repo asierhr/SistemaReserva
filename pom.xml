@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.6</version>
-        <relativePath/> 
+        <relativePath/>
     </parent>
     <groupId>com.asier</groupId>
     <artifactId>SistemaReservas</artifactId>
@@ -29,7 +29,7 @@
     <properties>
         <java.version>17</java.version>
         <flyway.version>11.1.0</flyway.version>
-        <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>  
+        <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -147,6 +147,11 @@
         <dependency>
             <groupId>io.awspring.cloud</groupId>
             <artifactId>spring-cloud-aws-starter-parameter-store</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.2.0</version>
         </dependency>
     </dependencies>
 

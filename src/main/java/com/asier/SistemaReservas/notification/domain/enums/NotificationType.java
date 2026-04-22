@@ -7,5 +7,6 @@ public enum NotificationType {
     FLIGHT_DELAYED,
     FLIGHT_CANCELLED,
     CHECK_IN_AVAILABLE,
-    GENERAL_INFO
+    GENERAL_INFO,
+    USER_CREATED
 }

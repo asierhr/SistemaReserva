@@ -7,6 +7,7 @@ import com.asier.SistemaReservas.hotel.history.service.HotelHistoryService;
 import com.asier.SistemaReservas.hotel.domain.DTO.HotelDTO;
 import com.asier.SistemaReservas.hotel.domain.DTO.HotelSummaryDTO;
 import com.asier.SistemaReservas.hotel.domain.entity.HotelEntity;
+import com.asier.SistemaReservas.hotel.hotelDashboard.event.records.HotelSearchEvent;
 import com.asier.SistemaReservas.hotel.mapper.HotelMapper;
 import com.asier.SistemaReservas.hotel.repository.HotelRepository;
 import com.asier.SistemaReservas.hotel.service.HotelService;
@@ -15,7 +16,12 @@ import com.asier.SistemaReservas.reservation.hotelReservation.domain.DTO.HotelRe
 import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
 import com.asier.SistemaReservas.reservation.hotelReservation.service.HotelReservationHelper;
 import com.asier.SistemaReservas.room.domain.entity.RoomEntity;
+import com.asier.SistemaReservas.system.auth.controller.AuthController;
+import com.asier.SistemaReservas.system.auth.records.RegisterRequest;
+import com.asier.SistemaReservas.system.auth.records.TokenResponse;
+import com.asier.SistemaReservas.system.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,8 +36,9 @@ public class HotelServiceImpl implements HotelService {
     private final HotelRepository hotelRepository;
     private final HotelMapper hotelMapper;
     private final HotelHistoryService hotelHistoryService;
-    private final CommentHelper commentHelper;
     private final HotelReservationHelper hotelReservationHelper;
+    private final ApplicationEventPublisher eventPublisher;
+    private final AuthService authService;
 
 
     @Override
@@ -50,6 +57,7 @@ public class HotelServiceImpl implements HotelService {
         HotelEntity hotel = getHotelEntity(id);
         if(!hotelHistoryService.existsHotelHistory()) hotelHistoryService.createHotelHistory();
         hotelHistoryService.updateHotelHistory(hotel);
+        eventPublisher.publishEvent(new HotelSearchEvent(id));
         return hotelMapper.toSummaryDTO(hotel);
     }
 
@@ -145,5 +153,11 @@ public class HotelServiceImpl implements HotelService {
                 .map(ReservationDTO::getTotalPrice)               // Stream<BigDecimal>
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return totalRevenue;
+    }
+
+    @Override
+    public TokenResponse createHotelEmployee(Long id, RegisterRequest request) {
+        request.setHotelId(id);
+        return authService.register(request);
     }
 }

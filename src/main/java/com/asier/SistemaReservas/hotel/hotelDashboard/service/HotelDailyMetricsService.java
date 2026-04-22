@@ -4,6 +4,7 @@ import com.asier.SistemaReservas.hotel.hotelDashboard.domain.DTO.HotelDailyMetri
 import com.asier.SistemaReservas.hotel.hotelDashboard.domain.DTO.HotelDashboardDTO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface HotelDailyMetricsService {
     void createDailyMetric(Long hotelId);
@@ -14,4 +15,5 @@ public interface HotelDailyMetricsService {
     void updateCommentMetrics(Long hotelId);
     void updateCancellationMetrics(Long hotelId);
     void updateTotalSearches(Long hotelId);
+    Map<Long, Integer> getSearchCountsByHotels(List<Long> hotelIds);
 }

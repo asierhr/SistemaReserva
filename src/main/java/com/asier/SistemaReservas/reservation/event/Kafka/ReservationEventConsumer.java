@@ -35,12 +35,21 @@ public class ReservationEventConsumer {
     private final EmailService emailService;
     private final PaymentService paymentService;
 
-    @KafkaListener(topics = "${topics.booking-created}", groupId = "notifications-group")
-    public void listen(String message, Acknowledgment ack) throws JsonProcessingException {
+    @KafkaListener(topics = "${topics.booking-created}", groupId = "${kafka.group.notification}")
+    public void listenNotification(String message, Acknowledgment ack) throws JsonProcessingException {
         try {
             ReservationCreatedKafkaEvent event = objectMapper.readValue(message, ReservationCreatedKafkaEvent.class);
-            processReservationEvent(event);
-            ack.acknowledge();
+            UserEntity user = userService.getUserById(event.userId());
+            ReservationEntity reservation = reservationService.getReservation(event.reservationId());
+            NotificationEntity notification = NotificationEntity.builder()
+                    .user(user)
+                    .reservation(reservation)
+                    .topic("Reservation created")
+                    .message("Your reservation with ID" + event.reservationId() + "has been created")
+                    .type(NotificationType.RESERVATION_CONFIRMED)
+                    .status(NotificationStatus.UNREAD)
+                    .build();
+            notificationService.createNotification(notification);
         }catch (JsonProcessingException e){
             log.error("Failed to parse message: {}", message, e);
             ack.acknowledge();
@@ -49,34 +58,34 @@ public class ReservationEventConsumer {
         }
     }
 
-    @Transactional
-    private void processReservationEvent(ReservationCreatedKafkaEvent event){
-        UserEntity user = userService.getUserById(event.userId());
-        ReservationEntity reservation = reservationService.getReservation(event.reservationId());
-        NotificationEntity notification = NotificationEntity.builder()
-                .user(user)
-                .reservation(reservation)
-                .message("Your reservation with ID" + event.reservationId() + "has been created")
-                .type(NotificationType.RESERVATION_CONFIRMED)
-                .status(NotificationStatus.UNREAD)
-                .build();
-        notificationService.createNotification(notification);
+    @KafkaListener(topics = "${topics.booking-created}", groupId = "${kafka.group.payment}")
+    public void listenPaymentAndEmail(String message, Acknowledgment ack) throws JsonProcessingException{
+        try {
+            ReservationCreatedKafkaEvent event = objectMapper.readValue(message, ReservationCreatedKafkaEvent.class);
+            UserEntity user = userService.getUserById(event.userId());
+            ReservationEntity reservation = reservationService.getReservation(event.reservationId());
+            Map<String, String> metadata = Map.of(
+                    "reservationId", reservation.getId().toString(),
+                    "userId", user.getId().toString(),
+                    "checkInDate", reservation.getCheckedIn().toString()
+            );
 
-        Map<String, String> metadata = Map.of(
-                "reservationId", reservation.getId().toString(),
-                "userId", user.getId().toString(),
-                "checkInDate", reservation.getCheckedIn().toString()
-        );
+            CreatePaymentRequest paymentRequest = new CreatePaymentRequest(
+                    reservation.getId(),
+                    reservation.getTotalPrice(),
+                    "EUR",
+                    user.getMail(),
+                    metadata
+            );
 
-        CreatePaymentRequest paymentRequest = new CreatePaymentRequest(
-                reservation.getId(),
-                reservation.getTotalPrice(),
-                "EUR",
-                user.getMail(),
-                metadata
-        );
-
-        PaymentResponse paymentResponse = paymentService.createPayment(paymentRequest);
-        emailService.createEmailOutbox(user, reservation, notification, null, paymentResponse.clientSecret());
+            PaymentResponse paymentResponse = paymentService.createPayment(paymentRequest);
+            emailService.createEmailOutbox(user, reservation, null, paymentResponse.clientSecret());
+            ack.acknowledge();
+        }catch (JsonProcessingException e){
+            log.error("Failed to parse message: {}", message, e);
+            ack.acknowledge();
+        }catch (Exception e) {
+            log.error("Error processing payment or email: {}", e.getMessage(), e);
+        }
     }
 }

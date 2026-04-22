@@ -1,5 +1,6 @@
 package com.asier.SistemaReservas.hotel.employee.domain.entity;
 
+import com.asier.SistemaReservas.airline.employee.domain.enums.EmployeeType;
 import com.asier.SistemaReservas.hotel.domain.entity.HotelEntity;
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import jakarta.persistence.*;
@@ -7,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.mapstruct.EnumMapping;
 
 @Data
 @AllArgsConstructor
@@ -25,4 +27,7 @@ public class HotelEmployeeInfoEntity {
     @ManyToOne
     @JoinColumn(name = "hotelId")
     private HotelEntity hotel;
+
+    @Enumerated(EnumType.STRING)
+    private EmployeeType employeeType;
 }

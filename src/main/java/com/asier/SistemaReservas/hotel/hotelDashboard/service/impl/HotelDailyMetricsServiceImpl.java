@@ -9,6 +9,7 @@ import com.asier.SistemaReservas.hotel.hotelDashboard.repository.HotelDailyMetri
 import com.asier.SistemaReservas.hotel.hotelDashboard.service.HotelDailyMetricsService;
 import com.asier.SistemaReservas.hotel.service.HotelService;
 import com.asier.SistemaReservas.reservation.hotelReservation.domain.entity.HotelReservationEntity;
+import com.asier.SistemaReservas.reservation.hotelReservation.service.HotelReservationHelper;
 import com.asier.SistemaReservas.reservation.hotelReservation.service.HotelReservationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,16 +19,19 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class HotelDailyMetricsServiceImpl implements HotelDailyMetricsService {
     private final HotelDailyMetricsRepository hotelDailyMetricsRepository;
     private final HotelService hotelService;
-    private final HotelReservationService hotelReservationService;
+    private final HotelReservationHelper hotelReservationHelper;
     private final HotelDailyMetricsMapper hotelDailyMetricsMapper;
-    private SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public void createDailyMetric(Long hotelId){
@@ -56,7 +60,7 @@ public class HotelDailyMetricsServiceImpl implements HotelDailyMetricsService {
     @Transactional
     public void updateBookingMetrics(Long hotelId, Long reservationId){
         HotelDailyMetricsEntity hotelDailyMetrics = hotelDailyMetricsRepository.findByHotelId(hotelId, LocalDate.now());
-        HotelReservationEntity reservation = hotelReservationService.getReservationById(reservationId);
+        HotelReservationEntity reservation = hotelReservationHelper.getReservationById(reservationId);
         HotelEntity hotel = hotelService.getHotelEntity(hotelId);
         if(reservation.getReservationDate().toLocalDate().equals(LocalDate.now())) {
             Integer totalRooms = hotel.getRooms().size();
@@ -142,5 +146,30 @@ public class HotelDailyMetricsServiceImpl implements HotelDailyMetricsService {
                 .createdAt(LocalDateTime.now())
                 .build();
         return hotelDashboard;
+    }
+
+    @Override
+    public Map<Long, Integer> getSearchCountsByHotels(List<Long> hotelIds) {
+        if (hotelIds == null || hotelIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate monthAgo = today.minusDays(30);
+
+        List<HotelDailyMetricsEntity> allMetrics = hotelDailyMetricsRepository
+                .findByHotelIdInAndDateBetween(hotelIds, monthAgo, today);
+
+        Map<Long, Integer> counts = allMetrics.stream()
+                .collect(Collectors.groupingBy(
+                        hotelDailyMetrics -> hotelDailyMetrics.getHotel().getId(),
+                        Collectors.summingInt(HotelDailyMetricsEntity::getTotalSearches)
+                ));
+
+        for (Long hotelId : hotelIds) {
+            counts.putIfAbsent(hotelId, 0);
+        }
+
+        return counts;
     }
 }

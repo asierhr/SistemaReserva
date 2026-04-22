@@ -12,4 +12,5 @@ public class HotelSearchDTO {
     private LocalDate checkIn;
     private LocalDate checkOut;
     private Integer guests;
+    private Integer rooms;
 }

@@ -14,4 +14,15 @@ public interface HotelDailyMetricsRepository extends JpaRepository<HotelDailyMet
 
     @Query("SELECT h FROM HotelDailyMetricsEntity h where h.hotel.id =:hotelId AND h.date BETWEEN :days AND :now")
     List<HotelDailyMetricsEntity> findLast30DaysMetrics(@Param("hotelId") Long hotelId, @Param("now") LocalDate now, @Param("days") LocalDate days);
+
+    @Query("""
+        SELECT h FROM HotelDailyMetricsEntity h
+        WHERE h.hotel.id IN :hotelIds
+        AND h.date BETWEEN :startDate AND :endDate
+    """)
+    List<HotelDailyMetricsEntity> findByHotelIdInAndDateBetween(
+            @Param("hotelIds") List<Long> hotelIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }
