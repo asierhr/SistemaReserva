@@ -4,7 +4,7 @@ provider "aws" {
 
 resource "aws_instance" "web1" {
 	ami = "ami-0d8c303e6b2e300dd"
-	instance_type = "t3.micro"
+	instance_type = "c7i-flex.large"
 
 	subnet_id = aws_subnet.public1.id
 	vpc_security_group_ids = [aws_security_group.sg_publico.id]
@@ -19,7 +19,7 @@ resource "aws_instance" "web1" {
 
 resource "aws_instance" "web2" {
 	ami = "ami-0d8c303e6b2e300dd"
-	instance_type = "t3.micro"
+	instance_type = "c7i-flex.large"
 
 	subnet_id = aws_subnet.public2.id
 	vpc_security_group_ids = [aws_security_group.sg_publico.id]

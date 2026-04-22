@@ -1,23 +1,28 @@
 services:
-  app:
+  backend-api:
     build: .
-    image: asierhr/sistemareserva:latest       
-    ports:
-      - "80:8080"
+    image: asierhr/sistemareserva:latest
+    env_file:
+      - ../.env       
     environment:
-      - MAIL_USERNAME=asierhr
-      - MAIL_PASSWORD=asierhr
-      - AWS_REGION=eu-west-3
-      - SPRING_CONFIG_IMPORT=aws-parameterstore:/config/SistemaReservas/
-      - SPRING_APPLICATION_NAME=SistemaReservas
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/reservas_db
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_ACTIVE_PROFILE=prod
       - SPRING_DATA_REDIS_HOST=redis        
       - SPRING_DATA_REDIS_PORT=6379
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - KAFKA_HOST=${KAFKA_HOST}
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
       redis:
         condition: service_started
       kafka:
-        condition: service_started
+        condition: service_healthy
     restart: on-failure
     networks:
         - app-network
@@ -46,6 +51,11 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - app-network
 
@@ -57,6 +67,17 @@ services:
       - redis-data:/data
     networks:
       - app-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-reservas
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    restart: always
 
 volumes:
   redis-data:

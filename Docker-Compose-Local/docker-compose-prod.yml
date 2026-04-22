@@ -1,0 +1,22 @@
+services:
+  backend-api:
+    build: .
+    image: asierhr/sistemareserva:latest
+    env_file:
+      - ../.env       
+    environment:
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/reservas_db
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_ACTIVE_PROFILE=prod
+      - SPRING_DATA_REDIS_HOST=redis        
+      - SPRING_DATA_REDIS_PORT=6379
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - KAFKA_HOST=${KAFKA_HOST}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    restart: on-failure
+
