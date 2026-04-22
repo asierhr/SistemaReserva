@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface HotelReservationHelper {
     List<HotelReservationDTO> transformToDTOList(List<HotelReservationEntity> hotelReservations);
+    HotelReservationEntity getReservationById(Long id);
 }

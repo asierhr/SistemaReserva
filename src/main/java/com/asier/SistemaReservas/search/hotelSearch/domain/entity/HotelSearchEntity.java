@@ -20,4 +20,5 @@ public class HotelSearchEntity extends SearchEntity {
     private LocalDate checkIn;
     private LocalDate checkOut;
     private Integer guests;
+    private Integer rooms;
 }

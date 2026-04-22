@@ -5,6 +5,8 @@ import com.asier.SistemaReservas.hotel.domain.DTO.HotelSummaryDTO;
 import com.asier.SistemaReservas.hotel.domain.DTO.HotelDTO;
 import com.asier.SistemaReservas.hotel.domain.entity.HotelEntity;
 import com.asier.SistemaReservas.reservation.hotelReservation.domain.DTO.HotelReservationDTO;
+import com.asier.SistemaReservas.system.auth.records.RegisterRequest;
+import com.asier.SistemaReservas.system.auth.records.TokenResponse;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,4 +28,5 @@ public interface HotelService {
     Integer totalCancellations(HotelEntity hotel);
     Integer totalBookings(HotelEntity hotel);
     BigDecimal dailyRevenue(HotelEntity hotel);
+    TokenResponse createHotelEmployee(Long id, RegisterRequest request);
 }

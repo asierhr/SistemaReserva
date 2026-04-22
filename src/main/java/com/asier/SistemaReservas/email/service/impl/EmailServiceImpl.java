@@ -73,7 +73,7 @@ public class EmailServiceImpl implements EmailService {
 
             helper.setFrom(fromEmail);
             helper.setTo(user.getMail());
-            helper.setSubject("Reservation Confirmed - #" + reservation.getId());
+            helper.setSubject("Reservation pending to be paid - #" + reservation.getId());
             helper.setText(buildPendingPaymentMessageHTML(user,reservation,clientSecret), true);
 
             mailSender.send(message);
@@ -92,13 +92,28 @@ public class EmailServiceImpl implements EmailService {
 
             helper.setFrom(fromEmail);
             helper.setTo(user.getMail());
-            helper.setSubject("Reservation Confirmed - #" + reservation.getId());
+            helper.setSubject("Reservation Refunded - #" + reservation.getId());
             helper.setText(buildRefundedPaymentMessageHTML(user,reservation), true);
 
             mailSender.send(message);
             log.info("✅ Email sent successfully to {}", user.getMail());
         } catch (Exception e) {
             log.error("Failed to send email to {}", user.getMail(), e);
+        }
+    }
+
+    @Override
+    public void sendWelcomeEmail(UserEntity user) {
+        try{
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(user.getMail());
+            helper.setSubject("Welcome user - #" + user.getName());
+            helper.setText(buildWelcomeMessageHTML(user), true);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -618,12 +633,137 @@ public class EmailServiceImpl implements EmailService {
         );
     }
 
+    private String buildWelcomeMessageHTML(UserEntity user) {
+        return String.format("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .header {
+                    background-color: #0066cc;
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                    border-radius: 5px 5px 0 0;
+                }
+                .content {
+                    background-color: #f9f9f9;
+                    padding: 30px;
+                    border: 1px solid #ddd;
+                }
+                .welcome-section {
+                    text-align: center;
+                    margin: 30px 0;
+                    padding: 20px;
+                    background-color: white;
+                    border-radius: 5px;
+                }
+                .button {
+                    display: inline-block;
+                    padding: 12px 30px;
+                    background-color: #0066cc;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                }
+                .footer {
+                    text-align: center;
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    border-top: 1px solid #ddd;
+                    color: #666;
+                    font-size: 12px;
+                }
+                .info-box {
+                    background-color: white;
+                    padding: 15px;
+                    border-left: 4px solid #0066cc;
+                    margin: 20px 0;
+                }
+                .features {
+                    display: grid;
+                    gap: 15px;
+                    margin: 20px 0;
+                }
+                .feature-item {
+                    background-color: white;
+                    padding: 15px;
+                    border-radius: 5px;
+                    border: 1px solid #e0e0e0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🎉 Welcome to Flight Reservation System!</h1>
+            </div>
+            
+            <div class="content">
+                <h2>Hello %s,</h2>
+                <p>Thank you for joining us! Your account has been successfully created. 🚀</p>
+                
+                <div class="info-box">
+                    <p><strong>📧 Email:</strong> %s</p>
+                    <p><strong>📅 Registration Date:</strong> %s</p>
+                </div>
+                
+                <div class="welcome-section">
+                    <h3>✨ You're all set to start booking!</h3>
+                    <p>Explore amazing destinations and find the best deals on flights and hotels.</p>
+                </div>
+                
+                <div class="features">
+                    <div class="feature-item">
+                        <strong>✈️ Book Flights</strong>
+                        <p style="margin: 5px 0; color: #666;">Search and reserve flights to destinations worldwide</p>
+                    </div>
+                    <div class="feature-item">
+                        <strong>🏨 Hotel Reservations</strong>
+                        <p style="margin: 5px 0; color: #666;">Find and book the perfect accommodation</p>
+                    </div>
+                    <div class="feature-item">
+                        <strong>📱 QR Boarding Passes</strong>
+                        <p style="margin: 5px 0; color: #666;">Receive digital boarding passes instantly</p>
+                    </div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <a href="%s" class="button">Start Exploring</a>
+                </div>
+                
+                <div class="info-box" style="background-color: #fff9e6; border-left-color: #ffc107;">
+                    <p style="margin: 0;"><strong>💡 Pro Tip:</strong> Complete your profile to receive personalized recommendations!</p>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>Need help? Contact us at support@yourcompany.com</p>
+                <p>© 2025 Flight Reservation System. All rights reserved.</p>
+            </div>
+        </body>
+        </html>
+        """,
+                user.getName(),
+                user.getMail(),
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd, yyyy")),
+                "https://yourapp.com/dashboard" // URL de tu aplicación
+        );
+    }
+
     @Override
-    public void createEmailOutbox(UserEntity user, ReservationEntity reservation, NotificationEntity notification, String qrCodeBase64, String clientSecret) {
+    public void createEmailOutbox(UserEntity user, ReservationEntity reservation, String qrCodeBase64, String clientSecret) {
         EmailOutboxEntity emailOutbox = EmailOutboxEntity.builder()
                 .user(user)
                 .reservation(reservation)
-                .notification(notification)
                 .qrCodeBase64(qrCodeBase64)
                 .clientSecret(clientSecret)
                 .attempts(0)

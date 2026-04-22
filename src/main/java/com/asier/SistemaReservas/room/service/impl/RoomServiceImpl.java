@@ -1,5 +1,7 @@
 package com.asier.SistemaReservas.room.service.impl;
 
+import com.asier.SistemaReservas.hotel.hotelDashboard.service.HotelDailyMetricsService;
+import com.asier.SistemaReservas.room.domain.DTO.RoomCombination;
 import com.asier.SistemaReservas.search.hotelSearch.domain.dto.HotelSearchDTO;
 import com.asier.SistemaReservas.hotel.service.HotelService;
 import com.asier.SistemaReservas.room.domain.DTO.RoomDTO;
@@ -9,13 +11,18 @@ import com.asier.SistemaReservas.room.mapper.RoomMapper;
 import com.asier.SistemaReservas.room.repository.RoomRepository;
 import com.asier.SistemaReservas.room.service.RoomService;
 import com.asier.SistemaReservas.search.hotelSearch.service.HotelSearchService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +32,16 @@ public class RoomServiceImpl implements RoomService {
     private final RoomMapper roomMapper;
     private final HotelService hotelService;
     private final HotelSearchService hotelSearchService;
+    private final HotelDailyMetricsService hotelDailyMetricsService;
+    private final Map<Integer, List<List<RoomType>>> localCache =
+            new ConcurrentHashMap<>();
+    private RoomService self;
+
+    @Autowired
+    @Lazy
+    public void setSelf(RoomService self) {
+        this.self = self;
+    }
 
     @Override
     public Map<RoomType, List<RoomDTO>> getRooms(Long id) {
@@ -41,13 +58,13 @@ public class RoomServiceImpl implements RoomService {
 
 
     @Override
-    public Set<List<RoomDTO>> getRoomsBySearch(HotelSearchDTO hotelSearch, String ipAddress) {
+    public Set<RoomCombination> getRoomsBySearch(HotelSearchDTO hotelSearch, String ipAddress) {
         hotelSearchService.saveHotelSearch(hotelSearch, ipAddress);
 
-        int totalGuests = hotelSearch.getGuests();
+        int totalRooms = hotelSearch.getRooms();
         String city = hotelSearch.getCity();
 
-        List<List<RoomType>> combinations = findRoomCombinations(totalGuests);
+        List<List<RoomType>> combinations = findRoomCombinations(totalRooms);
 
         List<RoomType> allowedTypes = combinations.stream()
                 .flatMap(List::stream)
@@ -59,100 +76,92 @@ public class RoomServiceImpl implements RoomService {
         Map<Long,List<RoomEntity>> roomsByHotel = candidateRooms.stream()
                 .collect(Collectors.groupingBy(r -> r.getHotel().getId()));
 
-        Set<List<RoomDTO>> matchingRoomCombinations = new HashSet<>();
+        List<Long> hotelIds = new ArrayList<>(roomsByHotel.keySet());
+        Map<Long,Integer> searchesByHotel = hotelDailyMetricsService.getSearchCountsByHotels(hotelIds);
 
-        for(Map.Entry<Long, List<RoomEntity>> entry: roomsByHotel.entrySet()){
-            List<RoomEntity> roomsInHotel = entry.getValue();
+        hotelIds.sort((a, b) -> searchesByHotel.getOrDefault(b, 0).compareTo(searchesByHotel.getOrDefault(a, 0)));
 
+        Set<RoomCombination> matchingRoomCombinations = new LinkedHashSet<>();
+
+        for(Long hotelId: hotelIds){
+            List<RoomEntity> roomsInHotel = roomsByHotel.get(hotelId);
+            Map<RoomType, List<RoomEntity>> roomsByType =
+                    roomsInHotel.stream().collect(Collectors.groupingBy(RoomEntity::getType));
             for (List<RoomType> combo : combinations) {
-                List<RoomEntity> selectedRooms = selectRoomsForCombination(
-                        roomsInHotel,
-                        combo,
-                        totalGuests
-                );
-                if (selectedRooms != null) {
-                    matchingRoomCombinations.add(roomMapper.toDTOList(selectedRooms));
+                List<RoomEntity> selected = selectRoomsForCombination(roomsByType, combo, totalRooms);
+                if (selected != null) {
+                    List<RoomDTO> dto = roomMapper.toDTOList(selected);
+                    matchingRoomCombinations.add(new RoomCombination(hotelId,dto,dto.stream()
+                            .map(RoomDTO::getCostPerNight)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add)));
                 }
             }
         }
         return matchingRoomCombinations;
     }
 
-    private List<RoomEntity> selectRoomsForCombination(List<RoomEntity> availableRooms, List<RoomType> combo, int totalGuests){
+    private List<RoomEntity> selectRoomsForCombination(Map<RoomType, List<RoomEntity>> roomsByType,
+                                                       List<RoomType> combo,
+                                                       int totalRooms
+    ) {
         List<RoomEntity> selected = new ArrayList<>();
-        List<RoomEntity> remaining = new ArrayList<>(availableRooms);
 
-        remaining.sort(Comparator.comparing(RoomEntity::getCostPerNight));
-
-        for(RoomType neededType : combo){
-            RoomEntity room = remaining.stream()
-                    .filter(r -> r.getType() == neededType)
-                    .findFirst()
-                    .orElse(null);
-
-            if(room == null){
-                return null;
-            }
-
-            selected.add(room);
-            remaining.remove(room);
+        for (RoomType type : combo) {
+            List<RoomEntity> list = roomsByType.get(type);
+            if (list == null || list.isEmpty()) return null;
+            selected.add(list.get(0));
         }
 
-        int totalCapacity = selected.stream()
-                .mapToInt(r->r.getType().getCapacity())
+        int capacity = selected.stream()
+                .mapToInt(r -> r.getType().getCapacity())
                 .sum();
 
-        return totalCapacity >= totalGuests ? selected : null;
+        return capacity >= totalRooms ? selected : null;
     }
 
-    private List<List<RoomType>> findRoomCombinations(int totalGuests) {
-        List<RoomType> allTypes = Arrays.asList(RoomType.values());
-        List<List<RoomType>> validCombinations = new ArrayList<>();
+    private List<List<RoomType>> findRoomCombinations(int totalRooms) {
+        return localCache.computeIfAbsent(totalRooms,
+                self::findRoomCombinationsFromRedis);
+    }
 
-        List<RoomType> sortedTypes = allTypes.stream()
+    @Override
+    @Cacheable(value = "roomCombinations", key = "#totalRooms")
+    public List<List<RoomType>> findRoomCombinationsFromRedis(int totalRooms) {
+        List<RoomType> types = Arrays.stream(RoomType.values())
                 .sorted(Comparator.comparingInt(RoomType::getCapacity).reversed())
                 .toList();
 
-        findCombinationsRecursive(sortedTypes, totalGuests, new ArrayList<>(),
-                validCombinations, 0,3);
+        List<List<RoomType>> result = new ArrayList<>();
+        findCombinationsRecursive(totalRooms, 0, types, new ArrayList<>(), result, 0);
 
-        return validCombinations.stream()
-                .filter(combo -> {
-                    int capacity = combo.stream()
-                            .mapToInt(RoomType::getCapacity)
-                            .sum();
-                    int waste = capacity - totalGuests;
-                    return waste <= totalGuests * 0.5;
-                })
-                .collect(Collectors.toList());
+        return result;
     }
 
     private void findCombinationsRecursive(
+            int remaining,
+            int roomsUsed,
             List<RoomType> types,
-            int remainingGuests,
             List<RoomType> current,
-            List<List<RoomType>> results,
-            int startIndex,
-            int maxRooms
+            List<List<RoomType>> result,
+            int startIndex  // NUEVO
     ){
-        if(remainingGuests <= 0){
-            results.add(new ArrayList<>(current));
+        if(remaining <= 0){
+            result.add(new ArrayList<>(current));
             return;
         }
 
-        if(current.size() >= maxRooms){
-            return;
-        }
+        if(roomsUsed == 3) return;
 
-        for(int i = startIndex; i < types.size(); i++){
+        for (int i = startIndex; i < types.size(); i++) {
             RoomType type = types.get(i);
+
+            if (type.getCapacity() > remaining * 1.5) continue;
+
             current.add(type);
-
-            findCombinationsRecursive(types,remainingGuests-type.getCapacity(),current,results,i,maxRooms);
-
+            findCombinationsRecursive(remaining - type.getCapacity(),
+                    roomsUsed + 1, types, current, result, i);
             current.remove(current.size() - 1);
         }
-
     }
 
     @Override

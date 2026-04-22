@@ -30,9 +30,6 @@ public class EmailOutboxEntity {
     @OneToOne
     private ReservationEntity reservation;
 
-    @OneToOne
-    private NotificationEntity notification;
-
     @Column(columnDefinition = "TEXT")
     private String qrCodeBase64;
 

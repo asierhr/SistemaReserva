@@ -1,7 +1,10 @@
 package com.asier.SistemaReservas.system.auth.service.impl;
 
+import com.asier.SistemaReservas.airline.employee.domain.enums.EmployeeType;
 import com.asier.SistemaReservas.airline.employee.service.AirlineEmployeeInfoService;
 import com.asier.SistemaReservas.aiport.service.AirportService;
+import com.asier.SistemaReservas.airline.service.AirlineHelper;
+import com.asier.SistemaReservas.hotel.service.HotelHelper;
 import com.asier.SistemaReservas.loyalty.service.LoyaltyService;
 import com.asier.SistemaReservas.system.auth.records.LoginRequest;
 import com.asier.SistemaReservas.system.auth.records.RegisterRequest;
@@ -16,8 +19,10 @@ import com.asier.SistemaReservas.system.JWT.repository.TokenRepository;
 import com.asier.SistemaReservas.system.JWT.domain.enums.TokenType;
 import com.asier.SistemaReservas.system.auth.service.AuthService;
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
+import com.asier.SistemaReservas.user.event.records.UserCreatedEvent;
 import com.asier.SistemaReservas.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,16 +42,17 @@ public class AuthServiceImpl implements AuthService {
     private final AirlineEmployeeInfoService airportEmployeeInfoService;
     private final HotelEmployeeInfoService hotelEmployeeInfoService;
     private final AirportService airportService;
-    private final HotelService hotelService;
-    private final LoyaltyService loyaltyService;
+    private final HotelHelper hotelHelper;
+    private final AirlineHelper airlineHelper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public TokenResponse register(RegisterRequest register) {
         UserEntity user = UserEntity.builder()
-                .mail(register.mail())
-                .name(register.name())
-                .password(passwordEncoder.encode(register.password()))
-                .userRole(register.role())
+                .mail(register.getMail())
+                .name(register.getName())
+                .password(passwordEncoder.encode(register.getPassword()))
+                .userRole(register.getRole())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -54,34 +60,37 @@ public class AuthServiceImpl implements AuthService {
 
         createWorkerByRole(savedUser, register);
 
+        eventPublisher.publishEvent(new UserCreatedEvent(savedUser));
+
         String jwtToken = jwtService.generateToken(savedUser);
         String refreshToken = jwtService.generateRefreshToken(savedUser);
-        saveUserToken(user, jwtToken);
+        saveUserToken(savedUser, jwtToken);
         return new TokenResponse(jwtToken, refreshToken);
     }
 
     private void createWorkerByRole(UserEntity user, RegisterRequest request){
         switch(user.getUserRole()){
             case HOTEL_WORKER:
-                if(request.hotelId() != null){
+                if(request.getHotelId() != null){
                     HotelEmployeeInfoEntity hotelEmployeeInfo = HotelEmployeeInfoEntity.builder()
                             .user(user)
-                            .hotel(hotelService.getHotelEntity(request.hotelId()))
+                            .hotel(hotelHelper.getHotelEntity(request.getHotelId()))
+                            .employeeType(request.getEmployeeType())
                             .build();
                     hotelEmployeeInfoService.createHotelEmployee(hotelEmployeeInfo);
                 }
                 break;
-            case AIRPORT_WORKER:
-                if(request.airportId() != null){
+            case AIRLINE_WORKER:
+                if(request.getAirportId() != null || request.getEmployeeType() == EmployeeType.ADMIN){
                     AirlineEmployeeInfoEntity airportEmployeeInfo = AirlineEmployeeInfoEntity.builder()
                             .user(user)
-                            .airport(airportService.getAirport(request.airportId()))
+                            .airport(airportService.getAirport(request.getAirportId()))
+                            .airline(airlineHelper.getAirline(request.getAirlineId()))
+                            .type(request.getEmployeeType())
                             .build();
                     airportEmployeeInfoService.createAirlineEmployee(airportEmployeeInfo);
                 }
                 break;
-            case USER:
-                loyaltyService.createLoyaltyUser(user);
             default:
                 break;
         }

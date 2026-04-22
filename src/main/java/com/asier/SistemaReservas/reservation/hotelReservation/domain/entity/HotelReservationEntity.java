@@ -30,6 +30,12 @@ public class HotelReservationEntity extends ReservationEntity {
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomReservationEntity> rooms = new ArrayList<>();
 
+    @Column(nullable = false)
+    private int numberRooms;
+
+    @Column(nullable = false)
     private LocalDate checkIn;
+
+    @Column(nullable = false)
     private LocalDate checkOut;
 }

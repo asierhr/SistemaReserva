@@ -22,5 +22,5 @@ public class SeatDTO {
     private SeatType seatType;
     private BigDecimal costPerSeat;
     private Boolean available = true;
-    private Integer flightId;
+    private Long flightId;
 }
