@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "loyalty-points")
+@Table(name = "loyalty_points")
 public class LoyaltyPointsEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
