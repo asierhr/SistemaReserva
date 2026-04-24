@@ -112,6 +112,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setTo(user.getMail());
             helper.setSubject("Welcome user - #" + user.getName());
             helper.setText(buildWelcomeMessageHTML(user), true);
+            mailSender.send(message);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

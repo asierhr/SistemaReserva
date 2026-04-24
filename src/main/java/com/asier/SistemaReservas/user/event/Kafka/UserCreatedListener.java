@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -14,10 +16,15 @@ public class UserCreatedListener {
 
     @EventListener
     @Async
-    @Transactional
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onUserCreated(UserCreatedEvent event){
         try{
-            userCreatedProducer.sendUserCreatedEvent(event.user());
+            UserCreatedEvent newUser = new UserCreatedEvent(
+                    event.id(),
+                    event.name(),
+                    event.mail()
+            );
+            userCreatedProducer.sendUserCreatedEvent(newUser);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
