@@ -38,10 +38,12 @@ jobs:
           tags: asierhr/sistemareserva-test:latest
   deploy:
     needs: build-test
-    runs-on: ubuntu-latest
-
-    if: github.base_ref == 'develop'
+    runs-on: self-hosted
     steps:
-      - name: Deploy to remote server via SSH
-        uses: appleboy/ssh-action@1.0.3
-        with
+      - uses: actions/checkout@v4
+      - name: Deploy
+        run: |
+          cd /home/asierhr/SistemaReserva/Docker-Compose-Local
+          docker-compose pull
+          ./initScript.sh
+      
