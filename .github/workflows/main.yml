@@ -1,0 +1,50 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+
+      - name: Run tests
+        run: mvn clean test
+
+      - name: Build package
+        run: mvn clean package -DskipTests
+
+      - name: Docker login
+        uses: docker/login-action@v4
+        with:
+          username: ${{secrets.DOCKER_USER}}
+          password: ${{secrets.DOCKER_PASS}}
+        
+      - name: Build and push Docker Image
+        uses: docker/build-push-action@v7.1.0
+        with:
+          context: .
+          push: true
+          tags: asierhr/sistemareserva-test:latest
+  deploy:
+    needs: build-test
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        run: |
+          cd /home/asierhr/SistemaReserva/Docker-Compose-Local
+          docker-compose pull
+          ./initScript.sh
+      
