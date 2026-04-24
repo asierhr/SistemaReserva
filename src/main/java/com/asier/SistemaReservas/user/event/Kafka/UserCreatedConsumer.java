@@ -9,6 +9,7 @@ import com.asier.SistemaReservas.notification.service.NotificationService;
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import com.asier.SistemaReservas.user.domain.enums.UserRole;
 import com.asier.SistemaReservas.user.event.records.UserCreatedEvent;
+import com.asier.SistemaReservas.user.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -26,12 +27,14 @@ public class UserCreatedConsumer {
     private final LoyaltyService loyaltyService;
     private final NotificationService notificationService;
     private final EmailService emailService;
+    private final UserService userService;
 
     @KafkaListener(topics = "${topics.user-created}", groupId = "${kafka.group.loyalty}")
     public void listenLoyalty(String message, Acknowledgment ack) {
         try{
             UserCreatedEvent event = objectMapper.readValue(message, UserCreatedEvent.class);
-            loyaltyService.createLoyaltyUser(event.user());
+            UserEntity user = userService.getUserById(event.id());
+            loyaltyService.createLoyaltyUser(user);
             ack.acknowledge();
         }catch (JsonProcessingException e) {
             log.error("Failed to parse message: {}", message, e);
@@ -46,7 +49,7 @@ public class UserCreatedConsumer {
     public void listenNotification(String message, Acknowledgment ack) {
         try {
             UserCreatedEvent event = objectMapper.readValue(message, UserCreatedEvent.class);
-            UserEntity user = event.user();
+            UserEntity user = userService.getUserById(event.id());
             NotificationEntity notification = NotificationEntity.builder()
                     .user(user)
                     .reservation(null)
@@ -70,7 +73,8 @@ public class UserCreatedConsumer {
     public void listenEmail(String message, Acknowledgment ack){
         try{
             UserCreatedEvent event = objectMapper.readValue(message, UserCreatedEvent.class);
-            emailService.sendWelcomeEmail(event.user());
+            UserEntity user = userService.getUserById(event.id());
+            emailService.sendWelcomeEmail(user);
             ack.acknowledge();
         }catch (JsonProcessingException e){
             log.error("Failed to parse message: {}", message, e);

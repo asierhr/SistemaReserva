@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "loyalty_tiers")
+@Table(name = "tier")
 public class LoyaltyTierEntity {
     @Id
     @GeneratedValue
