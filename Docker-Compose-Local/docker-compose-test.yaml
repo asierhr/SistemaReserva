@@ -2,7 +2,7 @@ services:
   backend-api-test:
     container_name: backend-api-test
     build: .
-    image: asierhr/sistemareserva-test:v2.0   
+    image: asierhr/sistemareserva-test:latest
     env_file:
       - ../.env    
     environment:
