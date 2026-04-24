@@ -21,6 +21,7 @@ import com.asier.SistemaReservas.system.auth.service.AuthService;
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import com.asier.SistemaReservas.user.event.records.UserCreatedEvent;
 import com.asier.SistemaReservas.user.service.UserService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -47,6 +48,7 @@ public class AuthServiceImpl implements AuthService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
+    @Transactional
     public TokenResponse register(RegisterRequest register) {
         UserEntity user = UserEntity.builder()
                 .mail(register.getMail())
@@ -60,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
 
         createWorkerByRole(savedUser, register);
 
-        eventPublisher.publishEvent(new UserCreatedEvent(savedUser));
+        eventPublisher.publishEvent(new UserCreatedEvent(savedUser.getId(), savedUser.getName(), savedUser.getMail()));
 
         String jwtToken = jwtService.generateToken(savedUser);
         String refreshToken = jwtService.generateRefreshToken(savedUser);

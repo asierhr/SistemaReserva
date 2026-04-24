@@ -1,6 +1,6 @@
 package com.asier.SistemaReservas.user.event.Kafka;
 
-import com.asier.SistemaReservas.user.domain.entity.UserEntity;
+import com.asier.SistemaReservas.user.event.records.UserCreatedEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +17,8 @@ public class UserCreatedProducer {
     @Value("${topics.user-created}")
     private String topic;
 
-    public void sendUserCreatedEvent(UserEntity user) throws JsonProcessingException {
-        String message = objectMapper.writeValueAsString(user);
+    public void sendUserCreatedEvent(UserCreatedEvent event) throws JsonProcessingException {
+        String message = objectMapper.writeValueAsString(event);
         kafkaTemplate.send(topic,message);
     }
 }
