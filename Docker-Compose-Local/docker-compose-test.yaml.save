@@ -1,18 +1,18 @@
-services:
+===services:
   backend-api-test:
     container_name: backend-api-test
     build: .
-    image: asierhr/sistemareserva-test:latest
+    image: asierhr/sistemareserva-test:v2.0   
     env_file:
-      - ../.env
+      - ../.env    
     environment:
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-reservas:3306/reservas_db_test
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-      - SPRING_PROFILES_ACTIVE=test
-      - SPRING_DATA_REDIS_HOST=redis 
+      - SPRING_ACTIVE_PROFILE=testing
+      - SPRING_DATA_REDIS_HOST=redis        
       - SPRING_DATA_REDIS_PORT=6379
       - STRIPE_API_KEY=${STRIPE_API_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
@@ -26,9 +26,6 @@ services:
     restart: on-failure
     networks:
       - sistema-reservas-net
-  nginx:
-    depends_on:
-      - backend-api-test
 networks:
   sistema-reservas-net:
     external: true

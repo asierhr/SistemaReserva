@@ -27,6 +27,9 @@ services:
     networks:
       - sistema-reservas-net
 
+  nginx:
+    depends_on:
+      - backend-api
 networks:
   sistema-reservas-net:
     external: true
