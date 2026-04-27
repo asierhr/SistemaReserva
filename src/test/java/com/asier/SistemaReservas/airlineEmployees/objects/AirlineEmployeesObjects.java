@@ -1,6 +1,5 @@
 package com.asier.SistemaReservas.airlineEmployees.objects;
 
-import com.asier.SistemaReservas.airline.AirlineObjects;
 import com.asier.SistemaReservas.airline.domain.entity.AirlineEntity;
 import com.asier.SistemaReservas.airline.employee.domain.entity.AirlineEmployeeInfoEntity;
 import com.asier.SistemaReservas.airline.employee.domain.enums.EmployeeType;

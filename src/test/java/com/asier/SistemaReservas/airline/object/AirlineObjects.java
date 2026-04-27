@@ -1,8 +1,7 @@
-package com.asier.SistemaReservas.airline;
+package com.asier.SistemaReservas.airline.object;
 
 import com.asier.SistemaReservas.airline.domain.entity.AirlineEntity;
 import com.asier.SistemaReservas.airline.employee.domain.entity.AirlineEmployeeInfoEntity;
-import com.asier.SistemaReservas.airlineEmployees.objects.AirlineEmployeesObjects;
 
 import java.time.LocalDateTime;
 import java.util.List;

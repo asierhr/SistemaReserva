@@ -1,8 +1,7 @@
 package com.asier.SistemaReservas.flight.objects;
 
-import com.asier.SistemaReservas.airline.AirlineObjects;
+import com.asier.SistemaReservas.airline.object.AirlineObjects;
 import com.asier.SistemaReservas.airline.domain.entity.AirlineEntity;
-import com.asier.SistemaReservas.airlineEmployees.objects.AirlineEmployeesObjects;
 import com.asier.SistemaReservas.airport.objects.AirportObjects;
 import com.asier.SistemaReservas.flight.domain.entity.FlightEntity;
 import com.asier.SistemaReservas.seats.objects.SeatObjects;
