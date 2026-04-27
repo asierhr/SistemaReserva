@@ -26,6 +26,7 @@ public class UserServiceTest {
     @InjectMocks
     private UserServiceImpl userService;
 
+
     @Test
     void testCreatedUser(){
         UserEntity user = UserObjects.user();

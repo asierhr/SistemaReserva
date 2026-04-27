@@ -8,6 +8,7 @@ target/
 *.tfstate.backup
 .terraform.lock.hcl
 .env
+src/test/resources/application-local-test-variables.properties
 
 ### STS ###
 .apt_generated

@@ -1,5 +1,6 @@
 package com.asier.SistemaReservas.seats.objects;
 
+import com.asier.SistemaReservas.flight.domain.entity.FlightEntity;
 import com.asier.SistemaReservas.flight.objects.FlightObjects;
 import com.asier.SistemaReservas.seats.domain.DTO.SeatDTO;
 import com.asier.SistemaReservas.seats.domain.entity.SeatEntity;
@@ -17,7 +18,7 @@ public class SeatObjects {
                 .seatColumn("1A")
                 .seatNumber("A")
                 .costPerSeat(new BigDecimal(100))
-                .flight(FlightObjects.flight1())
+                .flight(FlightEntity.builder().id(1L).build())
                 .available(true)
                 .build();
     }
@@ -31,7 +32,7 @@ public class SeatObjects {
                 .seatColumn("1A")
                 .seatNumber("A")
                 .costPerSeat(new BigDecimal(100))
-                .flight(FlightObjects.flight1())
+                .flight(FlightEntity.builder().id(1L).build())
                 .available(true)
                 .build();
     }
@@ -44,7 +45,7 @@ public class SeatObjects {
                 .seatColumn("1A")
                 .seatNumber("A")
                 .costPerSeat(new BigDecimal(100))
-                .flightId(FlightObjects.flight1().getId())
+                .flightId(1L)
                 .available(true)
                 .build();
     }
@@ -59,7 +60,7 @@ public class SeatObjects {
                 .seatNumber("A")
                 .costPerSeat(new BigDecimal(100))
                 .available(true)
-                .flightId(FlightObjects.flight1().getId())
+                .flightId(1L)
                 .build();
     }
 
@@ -72,7 +73,7 @@ public class SeatObjects {
                 .seatNumber("B")
                 .costPerSeat(new BigDecimal(1000))
                 .available(true)
-                .flight(FlightObjects.flight1())
+                .flight(FlightEntity.builder().id(1L).build())
                 .build();
     }
 
@@ -86,7 +87,7 @@ public class SeatObjects {
                 .seatNumber("B")
                 .costPerSeat(new BigDecimal(1000))
                 .available(true)
-                .flight(FlightObjects.flight1())
+                .flight(FlightEntity.builder().id(1L).build())
                 .build();
     }
 
@@ -99,7 +100,7 @@ public class SeatObjects {
                 .seatNumber("B")
                 .costPerSeat(new BigDecimal(1000))
                 .available(true)
-                .flightId(FlightObjects.flight1().getId())
+                .flightId(1L)
                 .build();
     }
 
@@ -113,7 +114,7 @@ public class SeatObjects {
                 .seatNumber("B")
                 .costPerSeat(new BigDecimal(1000))
                 .available(true)
-                .flightId(FlightObjects.flight1().getId())
+                .flightId(1L)
                 .build();
     }
     public static SeatEntity seat3(){
@@ -126,7 +127,7 @@ public class SeatObjects {
                 .seatNumber("C")
                 .costPerSeat(new BigDecimal(100))
                 .available(true)
-                .flight(FlightObjects.flight1())
+                .flight(FlightEntity.builder().id(1L).build())
                 .build();
     }
     public static SeatEntity seat3WithId(){
@@ -139,7 +140,7 @@ public class SeatObjects {
                 .seatNumber("C")
                 .costPerSeat(new BigDecimal(100))
                 .available(true)
-                .flight(FlightObjects.flight1())
+                .flight(FlightEntity.builder().id(1L).build())
                 .build();
     }
     public static SeatDTO seatDTO3(){
@@ -152,7 +153,7 @@ public class SeatObjects {
                 .seatNumber("C")
                 .costPerSeat(new BigDecimal(100))
                 .available(true)
-                .flightId(FlightObjects.flight1().getId())
+                .flightId(1L)
                 .build();
     }
     public static SeatDTO seatDTO3WithId(){
@@ -165,7 +166,7 @@ public class SeatObjects {
                 .seatNumber("C")
                 .costPerSeat(new BigDecimal(100))
                 .available(true)
-                .flightId(FlightObjects.flight1().getId())
+                .flightId(1L)
                 .build();
     }
 }
