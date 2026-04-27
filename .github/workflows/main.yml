@@ -53,6 +53,6 @@ jobs:
       - name: Deploy
         run: |
           cd /home/asierhr/SistemaReserva/Docker-Compose-Local
-          docker-compose pull
+          docker-compose -f docker-compose.yaml -f docker-compose-test.yaml pull
           ./initScript.sh
       
