@@ -44,6 +44,7 @@ public class UserServiceTest {
         verify(userRepository).save(user);
     }
 
+
     @Test
     void testGetUserByMail(){
         UserEntity user = UserObjects.user();
