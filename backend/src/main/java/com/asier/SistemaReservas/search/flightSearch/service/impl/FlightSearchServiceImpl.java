@@ -5,12 +5,10 @@ import com.asier.SistemaReservas.search.flightSearch.domain.entity.FlightSearchE
 import com.asier.SistemaReservas.search.flightSearch.mapper.FlightSearchMapper;
 import com.asier.SistemaReservas.search.flightSearch.repository.FlightSearchRepository;
 import com.asier.SistemaReservas.search.flightSearch.service.FlightSearchService;
-import com.asier.SistemaReservas.system.IpLocation.domain.Location;
 import com.asier.SistemaReservas.system.IpLocation.service.IpGeolocationService;
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import com.asier.SistemaReservas.user.service.UserService;
 import jakarta.transaction.Transactional;
-import org.springframework.transaction.annotation.Propagation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -1,0 +1,1 @@
+export type RoomType = 'INDIVIDUAL' | 'DOUBLE' | 'TRIPLE' | 'SUITE' | 'PRESIDENTIAL_SUITE';

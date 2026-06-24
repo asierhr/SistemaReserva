@@ -150,7 +150,7 @@ public class HotelServiceImpl implements HotelService {
     @Override
     public BigDecimal dailyRevenue(HotelEntity hotel) {
         BigDecimal totalRevenue = getBookingsFromToday(hotel).stream()
-                .map(ReservationDTO::getTotalPrice)               // Stream<BigDecimal>
+                .map(ReservationDTO::getTotalPrice)         
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return totalRevenue;
     }
