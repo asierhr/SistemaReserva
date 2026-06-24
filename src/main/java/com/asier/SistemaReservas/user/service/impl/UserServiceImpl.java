@@ -6,6 +6,7 @@ import com.asier.SistemaReservas.user.mapper.UserMapper;
 import com.asier.SistemaReservas.user.repository.UserRepository;
 import com.asier.SistemaReservas.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -25,6 +26,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Cacheable(value = "users", key = "#mail")
     public Optional<UserEntity> getUserByMail(String mail) {
         return userRepository.findByMail(mail);
     }
@@ -46,6 +48,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByMail(mail).orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
+    @Cacheable(value = "users", key = "#id")
     @Override
     public UserEntity getUserById(Long id) {
         return userRepository.findById(id)

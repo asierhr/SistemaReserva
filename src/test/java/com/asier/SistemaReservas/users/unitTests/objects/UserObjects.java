@@ -1,4 +1,4 @@
-package com.asier.SistemaReservas.users.objects;
+package com.asier.SistemaReservas.users.unitTests.objects;
 
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import com.asier.SistemaReservas.user.domain.enums.UserRole;

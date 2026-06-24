@@ -1,10 +1,10 @@
-package com.asier.SistemaReservas.users;
+package com.asier.SistemaReservas.users.unitTests;
 
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import com.asier.SistemaReservas.user.mapper.UserMapper;
 import com.asier.SistemaReservas.user.repository.UserRepository;
 import com.asier.SistemaReservas.user.service.impl.UserServiceImpl;
-import com.asier.SistemaReservas.users.objects.UserObjects;
+import com.asier.SistemaReservas.users.unitTests.objects.UserObjects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

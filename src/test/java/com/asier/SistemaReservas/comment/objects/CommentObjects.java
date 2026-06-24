@@ -2,7 +2,7 @@ package com.asier.SistemaReservas.comment.objects;
 
 import com.asier.SistemaReservas.comment.domain.entity.CommentEntity;
 import com.asier.SistemaReservas.hotel.objects.HotelObjects;
-import com.asier.SistemaReservas.users.objects.UserObjects;
+import com.asier.SistemaReservas.users.unitTests.objects.UserObjects;
 
 public class CommentObjects {
     public static CommentEntity comment1(){

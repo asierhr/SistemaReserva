@@ -4,7 +4,7 @@ import com.asier.SistemaReservas.airline.domain.entity.AirlineEntity;
 import com.asier.SistemaReservas.airline.employee.domain.entity.AirlineEmployeeInfoEntity;
 import com.asier.SistemaReservas.airline.employee.domain.enums.EmployeeType;
 import com.asier.SistemaReservas.airport.objects.AirportObjects;
-import com.asier.SistemaReservas.users.objects.UserObjects;
+import com.asier.SistemaReservas.users.unitTests.objects.UserObjects;
 
 public class AirlineEmployeesObjects {
     public static AirlineEmployeeInfoEntity airlineEmployeeInfo1(AirlineEntity airline){
