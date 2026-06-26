@@ -2,7 +2,7 @@ services:
   frontend-test:
     container_name: frontend-test
     build: .
-    image: asierhr/sistemareserva-front-test:latest
+    image: asierhr/sistemareserva-front-test:${APP_VERSION:-latest}
     volumes:
       - ../nginx/nginx-test.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
@@ -13,7 +13,7 @@ services:
   backend-api-test:
     container_name: backend-api-test
     build: .
-    image: asierhr/sistemareserva-back-test:latest
+    image: asierhr/sistemareserva-back-test:${APP_VERSION:-latest}
     env_file:
       - ../.env
     environment:

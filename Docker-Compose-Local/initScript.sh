@@ -1,7 +1,23 @@
-#!/usr/bin/env bash
+#!/bin/bash
+deploy_test() {
+    docker compose -f docker-compose.yaml -f docker-compose-test.yaml --env-file ../.env up -d --build
+}
 
-if [[ "$1" == "-delete" ]]; then
-    docker-compose -f docker-compose.yaml -f docker-compose-test.yaml -f docker-compose-prod.yml down
-else
-    docker-compose -f docker-compose.yaml -f docker-compose-test.yaml -f docker-compose-prod.yml --env-file ../.env up -d
-fi
+deploy_prod() {
+    docker compose -f docker-compose.yaml -f docker-compose-prod.yaml --env-file ../.env up -d --build
+}
+
+case "$1" in
+    "-delete")
+        docker compose -f docker-compose.yaml -f docker-compose-test.yaml -f docker-compose-prod.yaml down
+        ;;
+    "test")
+        deploy_test
+        ;;
+    "prod")
+        deploy_prod
+        ;;
+    *)
+        echo "Uso: ./initScript.sh [test | prod | -delete]"
+        ;;
+esac
