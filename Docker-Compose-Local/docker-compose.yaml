@@ -58,16 +58,6 @@ services:
       start_period: 15s
     networks:
       - sistema-reservas-net
-  nginx:
-    image: nginx:alpine
-    container_name: nginx-reservas
-    ports:
-      - "80:80"
-    volumes:
-      - ../nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    restart: always
-    networks:
-      - sistema-reservas-net
 
 volumes:
   redis-data:
