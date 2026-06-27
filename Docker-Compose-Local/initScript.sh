@@ -9,7 +9,7 @@ deploy_prod() {
 
 case "$1" in
     "-delete")
-        docker compose -f docker-compose.yaml -f docker-compose-test.yaml -f docker-compose-prod.yaml down
+        docker compose -f docker-compose.yaml -f docker-compose-test.yaml -f docker-compose-prod.yaml --env-file ../.env down
         ;;
     "test")
         deploy_test

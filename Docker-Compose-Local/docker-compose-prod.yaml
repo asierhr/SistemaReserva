@@ -8,7 +8,7 @@ services:
     depends_on:
       - backend-api
     networks:
-      - sistema-reserva-net
+      - sistema-reservas-net
   backend-api:
     container_name: backend-api
     build: .
