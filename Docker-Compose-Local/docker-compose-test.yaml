@@ -4,7 +4,7 @@ services:
     build: .
     ports:
       - "80:80"
-    image: asierhr/sistemareserva-front-test:${APP_VERSION:-latest}
+    image: asierhr/sistemareserva-front-test:v.1.0.0
     volumes:
       - ../nginx/nginx-test.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
@@ -15,9 +15,9 @@ services:
   backend-api-test:
     container_name: backend-api-test
     build: .
-    image: asierhr/sistemareserva-back-test:${APP_VERSION:-latest}
     ports:
       - "8080:8080"
+    image: asierhr/sistemareserva-back-test:v.1.0.0
     env_file:
       - ../.env
     environment:

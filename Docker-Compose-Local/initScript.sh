@@ -1,10 +1,10 @@
 #!/bin/bash
 deploy_test() {
-    docker compose -f docker-compose.yaml -f docker-compose-test.yaml --env-file ../.env up -d --build
+    docker-compose -f docker-compose.yaml -f docker-compose-test.yaml --env-file ../.env up -d
 }
 
 deploy_prod() {
-    docker compose -f docker-compose.yaml -f docker-compose-prod.yaml --env-file ../.env up -d --build
+    docker-compose -f docker-compose.yaml -f docker-compose-prod.yaml --env-file ../.env up -d 
 }
 
 case "$1" in
