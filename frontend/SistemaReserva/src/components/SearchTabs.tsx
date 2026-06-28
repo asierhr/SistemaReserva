@@ -1,129 +1,215 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 interface SearchTabsProps {
-  onSearchFlights?: (data: { origin: string; destination: string; date: string }) => void;
+  onSearchFlights?: (data: {
+    origin: string;
+    destination: string;
+    date: string;
+  }) => void;
   onSearchHotels?: (data: { destination: string; guests: number }) => void;
 }
 
-export const SearchTabs: React.FC<SearchTabsProps> = ({ onSearchFlights, onSearchHotels }) => {
-  const [activeTab, setActiveTab] = useState<'vuelos' | 'hoteles'>('vuelos');
-  const [flightOrigin, setFlightOrigin] = useState('');
-  const [flightDest, setFlightDest] = useState('');
-  const [flightDate, setFlightDate] = useState('');
-  const [hotelDest, setHotelDest] = useState('');
-  const [hotelGuests, setHotelGuests] = useState(1);
+export const SearchTabs: React.FC<SearchTabsProps> = ({
+  onSearchFlights,
+  onSearchHotels,
+}) => {
+  const [activeTab, setActiveTab] = useState<"vuelos" | "hoteles">("vuelos");
+
+  const [flightOrigin, setFlightOrigin] = useState("");
+  const [flightDest, setFlightDest] = useState("");
+  const [flightDate, setFlightDate] = useState("");
+
+  const [hotelDest, setHotelDest] = useState("");
+  const [hotelGuests, setHotelGuests] = useState(2);
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl shadow-slate-900/20 border border-white/20 p-2 overflow-hidden text-slate-800">
-      
-      {/* Selector de Pestañas Estilo Pastilla (Pill Tabs) */}
-      <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl w-fit mx-6 mt-6">
-        <button
-          type="button"
-          onClick={() => setActiveTab('vuelos')}
-          className={`px-6 py-2.5 rounded-xl font-bold text-xs tracking-wide uppercase transition-all duration-200 flex items-center gap-2 ${
-            activeTab === 'vuelos'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          ✈️ Vuelos
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('hoteles')}
-          className={`px-6 py-2.5 rounded-xl font-bold text-xs tracking-wide uppercase transition-all duration-200 flex items-center gap-2 ${
-            activeTab === 'hoteles'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          🏨 Hoteles
-        </button>
+    <div
+      className="
+        w-full max-w-5xl mx-auto
+        rounded-[32px]
+        bg-white/5
+        backdrop-blur-2xl
+        border border-white/10
+        shadow-2xl shadow-black/40
+        overflow-hidden
+      "
+    >
+
+      {/* TABS */}
+      <div className="flex justify-center pt-6">
+        <div className="flex gap-2 rounded-full bg-white/10 p-2 border border-white/10">
+
+          <button
+            onClick={() => setActiveTab("vuelos")}
+            className={`
+              px-6 py-2 rounded-full text-xs font-bold uppercase tracking-[3px]
+              transition
+              ${
+                activeTab === "vuelos"
+                  ? "bg-white text-slate-900 shadow"
+                  : "text-white/70 hover:text-white"
+              }
+            `}
+          >
+            ✈️ Vuelos
+          </button>
+
+          <button
+            onClick={() => setActiveTab("hoteles")}
+            className={`
+              px-6 py-2 rounded-full text-xs font-bold uppercase tracking-[3px]
+              transition
+              ${
+                activeTab === "hoteles"
+                  ? "bg-white text-slate-900 shadow"
+                  : "text-white/70 hover:text-white"
+              }
+            `}
+          >
+            🏨 Hoteles
+          </button>
+
+        </div>
       </div>
 
-      {/* Contenedor del Formulario */}
-      <div className="p-6 pt-4">
-        {activeTab === 'vuelos' && (
-          <form onSubmit={(e) => { e.preventDefault(); onSearchFlights?.({ origin: flightOrigin, destination: flightDest, date: flightDate }); }} 
-                className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-            
-            <div className="lg:col-span-4 bg-slate-50 border border-slate-200/60 rounded-2xl p-3 hover:bg-slate-100/50 transition">
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">Origen</label>
+      {/* CONTENT */}
+      <div className="p-6 pt-8">
+
+        {/* ===== VUELOS ===== */}
+        {activeTab === "vuelos" && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSearchFlights?.({
+                origin: flightOrigin,
+                destination: flightDest,
+                date: flightDate,
+              });
+            }}
+            className="grid grid-cols-1 md:grid-cols-12 gap-3"
+          >
+
+            {/* ORIGEN */}
+            <div className="md:col-span-4 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+              <label className="text-[10px] uppercase tracking-[3px] text-white/50">
+                Origen
+              </label>
               <input
-                type="text"
-                placeholder="¿Desde dónde despegas?"
                 value={flightOrigin}
                 onChange={(e) => setFlightOrigin(e.target.value)}
-                className="w-full bg-transparent font-medium text-slate-800 placeholder-slate-400 focus:outline-none text-sm"
-                required
+                placeholder="Madrid..."
+                className="w-full bg-transparent text-white outline-none mt-1"
               />
             </div>
 
-            <div className="lg:col-span-4 bg-slate-50 border border-slate-200/60 rounded-2xl p-3 hover:bg-slate-100/50 transition">
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">Destino</label>
+            {/* DESTINO */}
+            <div className="md:col-span-4 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+              <label className="text-[10px] uppercase tracking-[3px] text-white/50">
+                Destino
+              </label>
               <input
-                type="text"
-                placeholder="¿A dónde quieres aterrizar?"
                 value={flightDest}
                 onChange={(e) => setFlightDest(e.target.value)}
-                className="w-full bg-transparent font-medium text-slate-800 placeholder-slate-400 focus:outline-none text-sm"
-                required
+                placeholder="París..."
+                className="w-full bg-transparent text-white outline-none mt-1"
               />
             </div>
 
-            <div className="lg:col-span-2 bg-slate-50 border border-slate-200/60 rounded-2xl p-3 hover:bg-slate-100/50 transition">
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">Fecha Ida</label>
+            {/* FECHA */}
+            <div className="md:col-span-2 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+              <label className="text-[10px] uppercase tracking-[3px] text-white/50">
+                Fecha
+              </label>
               <input
                 type="date"
                 value={flightDate}
                 onChange={(e) => setFlightDate(e.target.value)}
-                className="w-full bg-transparent font-medium text-slate-800 focus:outline-none text-sm"
-                required
+                className="w-full bg-transparent text-white outline-none mt-1"
               />
             </div>
 
-            <button type="submit" className="lg:col-span-2 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm h-[58px] rounded-2xl transition shadow-lg shadow-blue-600/20 active:scale-[0.98]">
+            {/* BOTÓN */}
+            <button
+              type="submit"
+              className="
+                md:col-span-2
+                rounded-2xl
+                bg-gradient-to-r from-blue-600 to-indigo-600
+                text-white font-bold text-sm
+                shadow-lg shadow-blue-600/20
+                transition
+                hover:scale-[1.03]
+                active:scale-[0.98]
+              "
+            >
               Buscar
             </button>
           </form>
         )}
 
-        {activeTab === 'hoteles' && (
-          <form onSubmit={(e) => { e.preventDefault(); onSearchHotels?.({ destination: hotelDest, guests: hotelGuests }); }} 
-                className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-            
-            <div className="lg:col-span-6 bg-slate-50 border border-slate-200/60 rounded-2xl p-3 hover:bg-slate-100/50 transition">
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">Destino u Hotel</label>
+        {/* ===== HOTELES ===== */}
+        {activeTab === "hoteles" && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSearchHotels?.({
+                destination: hotelDest,
+                guests: hotelGuests,
+              });
+            }}
+            className="grid grid-cols-1 md:grid-cols-12 gap-3"
+          >
+
+            {/* DESTINO */}
+            <div className="md:col-span-6 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+              <label className="text-[10px] uppercase tracking-[3px] text-white/50">
+                Destino
+              </label>
               <input
-                type="text"
-                placeholder="Ciudad, región o alojamiento específico"
                 value={hotelDest}
                 onChange={(e) => setHotelDest(e.target.value)}
-                className="w-full bg-transparent font-medium text-slate-800 placeholder-slate-400 focus:outline-none text-sm"
-                required
+                placeholder="Ciudad o hotel"
+                className="w-full bg-transparent text-white outline-none mt-1"
               />
             </div>
 
-            <div className="lg:col-span-4 bg-slate-50 border border-slate-200/60 rounded-2xl p-3 hover:bg-slate-100/50 transition">
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">Huéspedes</label>
+            {/* HUÉSPEDES */}
+            <div className="md:col-span-4 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+              <label className="text-[10px] uppercase tracking-[3px] text-white/50">
+                Huéspedes
+              </label>
               <select
                 value={hotelGuests}
                 onChange={(e) => setHotelGuests(Number(e.target.value))}
-                className="w-full bg-transparent font-medium text-slate-800 focus:outline-none text-sm cursor-pointer"
+                className="w-full bg-transparent text-white outline-none mt-1"
               >
-                <option value={1}>1 Viajero solo</option>
-                <option value={2}>2 Personas (Pareja)</option>
-                <option value={3}>3 Personas</option>
-                <option value={4}>4 Personas</option>
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
               </select>
             </div>
 
-            <button type="submit" className="lg:col-span-2 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm h-[58px] rounded-2xl transition shadow-lg shadow-blue-600/20 active:scale-[0.98]">
+            {/* BOTÓN */}
+            <button
+              type="submit"
+              className="
+                md:col-span-2
+                rounded-2xl
+                bg-gradient-to-r from-blue-600 to-indigo-600
+                text-white font-bold text-sm
+                shadow-lg shadow-blue-600/20
+                transition
+                hover:scale-[1.03]
+                active:scale-[0.98]
+              "
+            >
               Explorar
             </button>
+
           </form>
         )}
+
       </div>
     </div>
   );
