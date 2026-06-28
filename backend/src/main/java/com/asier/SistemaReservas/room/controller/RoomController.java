@@ -10,11 +10,20 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RestController
 @RequiredArgsConstructor
 public class RoomController {
     private final RoomService roomService;
+
+    @PostMapping("/hotels/{id}/rooms")
+    public RoomDTO postMethodName(@RequestBody RoomDTO room, @PathVariable Long id) {
+        return roomService.createRoom(room,id);
+    }
+        
 
     @GetMapping(path = "/hotels/{id}/rooms")
     public Map<RoomType, List<RoomDTO>> getRooms(@PathVariable Long id){
