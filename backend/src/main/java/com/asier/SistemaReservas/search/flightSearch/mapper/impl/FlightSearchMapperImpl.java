@@ -3,7 +3,6 @@ package com.asier.SistemaReservas.search.flightSearch.mapper.impl;
 import com.asier.SistemaReservas.search.flightSearch.domain.dto.FlightSearchDTO;
 import com.asier.SistemaReservas.search.flightSearch.domain.entity.FlightSearchEntity;
 import com.asier.SistemaReservas.search.flightSearch.mapper.FlightSearchMapper;
-import com.asier.SistemaReservas.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +12,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class FlightSearchMapperImpl implements FlightSearchMapper {
-    private final UserMapper userMapper;
 
     @Override
     public FlightSearchEntity toEntity(FlightSearchDTO flightSearchDTO) {

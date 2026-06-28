@@ -1,5 +1,6 @@
 package com.asier.SistemaReservas.room.service.impl;
 
+import com.asier.SistemaReservas.hotel.domain.entity.HotelEntity;
 import com.asier.SistemaReservas.hotel.hotelDashboard.service.HotelDailyMetricsService;
 import com.asier.SistemaReservas.room.domain.DTO.RoomCombination;
 import com.asier.SistemaReservas.search.hotelSearch.domain.dto.HotelSearchDTO;
@@ -12,10 +13,12 @@ import com.asier.SistemaReservas.room.repository.RoomRepository;
 import com.asier.SistemaReservas.room.service.RoomService;
 import com.asier.SistemaReservas.search.hotelSearch.service.HotelSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -44,6 +47,18 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @CacheEvict(value = "hotelRoom", key = "room.hotelId")
+    public RoomDTO createRoom(RoomDTO room){
+        HotelEntity hotel = hotelService.getHotelEntity(room.getHotelId());
+        if(hotel == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hotel not found");
+        if(roomRepository.existsByHotelIdAndNumRoom(room.getHotelId(),room.getNumRoom())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hotel already has that room number");
+        RoomEntity roomEntity = roomMapper.toEntity(room);
+        roomEntity.setHotel(hotel);
+        return roomMapper.toDTO(roomRepository.save(roomEntity));
+    }
+
+    @Override
+    @Cacheable(value = "roomHotel", key = "#id")
     public Map<RoomType, List<RoomDTO>> getRooms(Long id) {
         if(!hotelService.existsHotel(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hotel not found");
         List<RoomEntity> roomEntities = roomRepository.findAllByHotelId(id);

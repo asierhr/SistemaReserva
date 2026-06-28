@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 public interface RoomService {
+    RoomDTO createRoom(RoomDTO room);
     Map<RoomType, List<RoomDTO>> getRooms(Long id);
     List<RoomEntity> getRoomsFromIds(List<Long> id);
     Set<RoomCombination> getRoomsBySearch(HotelSearchDTO hotelSearch, String ipAddress);

@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 @Builder
 public class RoomDTO {
     private Long id;
-    private Integer hotelId;
+    private Long hotelId;
     private String numRoom;
     private RoomType type;
     private BigDecimal costPerNight;

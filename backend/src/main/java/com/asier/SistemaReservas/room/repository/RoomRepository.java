@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RoomRepository extends JpaRepository<RoomEntity, Long> {
@@ -102,4 +103,24 @@ public interface RoomRepository extends JpaRepository<RoomEntity, Long> {
                                                @Param("type") RoomType type,
                                                @Param("checkIn") LocalDate checkIn,
                                                @Param("checkOut") LocalDate checkOut);
+
+
+      @Query("""
+                SELECT r FROM RoomEntity r
+                WHERE r.hotel.id = :hotelId
+                AND r.numRoom =: numRoom
+                """)
+      Optional<RoomEntity> findRoomByHotelIdAndNumRoom(@Param("hotelId") Long id, @Param("numRoom") String numRoom);
+
+      @Query("""
+                SELECT 
+                  CASE 
+                        WHEN COUNT(r) > 0 THEN TRUE 
+                        ELSE FALSE 
+                  END
+                  FROM room r
+                  WHERE r.hotel_id = :hotelId
+                  AND r.num_room = :numRoom
+                """)
+      boolean existsByHotelIdAndNumRoom(@Param("hotelId") Long hotelId, @Param("numRoom") String numRoom);
 }
