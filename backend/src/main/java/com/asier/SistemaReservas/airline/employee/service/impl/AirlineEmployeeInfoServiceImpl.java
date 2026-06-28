@@ -5,7 +5,6 @@ import com.asier.SistemaReservas.airline.employee.domain.entity.AirlineEmployeeI
 import com.asier.SistemaReservas.airline.employee.mapper.AirlineEmployeeInfoMapper;
 import com.asier.SistemaReservas.airline.employee.repository.AirlineEmployeeInfoRepository;
 import com.asier.SistemaReservas.airline.employee.service.AirlineEmployeeInfoService;
-import com.asier.SistemaReservas.airline.mapper.AirlineMapper;
 import com.asier.SistemaReservas.user.domain.entity.UserEntity;
 import com.asier.SistemaReservas.user.service.UserService;
 import lombok.RequiredArgsConstructor;

@@ -111,7 +111,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             paymentRepository.save(payment);
 
-            log.info("✅ Payment intent created: {}", paymentIntent.getId());
+            log.info("Payment intent created: {}", paymentIntent.getId());
 
             return PaymentResponse.builder()
                     .paymentId(payment.getId())

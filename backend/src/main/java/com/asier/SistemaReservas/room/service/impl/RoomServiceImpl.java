@@ -143,7 +143,7 @@ public class RoomServiceImpl implements RoomService {
             List<RoomType> types,
             List<RoomType> current,
             List<List<RoomType>> result,
-            int startIndex  // NUEVO
+            int startIndex 
     ){
         if(remaining <= 0){
             result.add(new ArrayList<>(current));

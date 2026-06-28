@@ -64,7 +64,6 @@ public class AirportServiceImpl implements AirportService {
         LocalDateTime startOfToday = today.atStartOfDay();
         LocalDateTime endOfToday = today.atTime(23, 59, 59);
 
-        List<FlightEntity> allFlights = new ArrayList<>();
         List<FlightEntity> arrivingFlights = airport.getArrivingFlights().stream()
                 .filter(f -> {
                     LocalDateTime arrivalDateTime = LocalDateTime.of(f.getFlightDay(), f.getArrivalTime());
@@ -76,6 +75,7 @@ public class AirportServiceImpl implements AirportService {
                 .sorted(Comparator.comparing(FlightEntity::getFlightDay)
                         .thenComparing(f -> f.getArrivalTime() != null ? f.getArrivalTime() : LocalTime.MIDNIGHT))
                 .toList();
+                
         List<FlightEntity> departureFlights = airport.getDepartingFlights().stream()
                 .filter(f -> f.getFlightDay().equals(today))
                 .sorted(Comparator.comparing(FlightEntity::getFlightDay)

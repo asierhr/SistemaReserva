@@ -13,7 +13,6 @@ import com.asier.SistemaReservas.flight.repository.FlightRepository;
 import com.asier.SistemaReservas.flight.service.FlightHelper;
 import com.asier.SistemaReservas.flight.service.FlightService;
 import com.asier.SistemaReservas.search.flightSearch.service.FlightSearchService;
-import com.asier.SistemaReservas.user.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
